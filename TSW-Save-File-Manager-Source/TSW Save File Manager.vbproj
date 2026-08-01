@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>TSW_Save_Game_Manager</RootNamespace>
+    <StartupObject>TSW_Save_Game_Manager.My.MyApplication</StartupObject>
+    <UseWindowsForms>true</UseWindowsForms>
+    <MyType>WindowsForms</MyType>
+	<ApplicationIcon>Assets\TSWSaveManager.ico</ApplicationIcon>
+	<Version>1.1.0</Version>
+	<FileVersion>1.1.0.0</FileVersion>
+	<InformationalVersion>1.1.0</InformationalVersion>
+    <Authors>Pete Lewis</Authors>
+	<Company>TSWSaveFileManager</Company>
+	<Product>TSW Save File Manager</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<EmbeddedResource Include="Assets\TSWSaveManager.ico" />
+	<EmbeddedResource Include="Assets\ArrowUp.png" />
+	<EmbeddedResource Include="Assets\ArrowDown.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="My Project\Application.Designer.vb">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Update="My Project\Settings.Designer.vb">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Update="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>
