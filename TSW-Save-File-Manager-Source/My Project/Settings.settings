@@ -1,0 +1,18 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="" GeneratedClassName="MySettings" UseMySettingsClassName="true">
+  <Profiles />
+  <Settings>
+    <Setting Name="lastSortColumn" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="lastSortOrder" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Ascending</Value>
+    </Setting>
+    <Setting Name="lastVersion" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Train Sim World</Value>
+    </Setting>
+    <Setting Name="lastTabOrder" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Date</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
