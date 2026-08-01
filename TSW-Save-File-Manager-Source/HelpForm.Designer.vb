@@ -37,7 +37,7 @@ Partial Class HelpForm
         ' 
         ' CloseButton
         ' 
-        CloseButton.Location = New Point(313, 320)
+        CloseButton.Location = New Point(387, 394)
         CloseButton.Name = "CloseButton"
         CloseButton.Size = New Size(75, 23)
         CloseButton.TabIndex = 1
@@ -47,10 +47,11 @@ Partial Class HelpForm
         ' HelpText
         ' 
         HelpText.BorderStyle = BorderStyle.None
+        HelpText.Font = New Font("Aptos Display", 11.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         HelpText.Location = New Point(12, 12)
         HelpText.Name = "HelpText"
         HelpText.ReadOnly = True
-        HelpText.Size = New Size(376, 298)
+        HelpText.Size = New Size(450, 365)
         HelpText.TabIndex = 2
         HelpText.Text = ""
         ' 
@@ -58,16 +59,14 @@ Partial Class HelpForm
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(401, 351)
+        ClientSize = New Size(474, 425)
         Controls.Add(HelpText)
         Controls.Add(CloseButton)
         Controls.Add(Label1)
         FormBorderStyle = FormBorderStyle.FixedSingle
-        MaximumSize = New Size(417, 390)
-        MinimumSize = New Size(417, 390)
         Name = "HelpForm"
-        StartPosition = FormStartPosition.CenterScreen
-        Text = "TSW Save Game Manager"
+        StartPosition = FormStartPosition.Manual
+        Text = "TSW Save File Manager"
         ResumeLayout(False)
         PerformLayout()
     End Sub
