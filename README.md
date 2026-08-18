@@ -38,7 +38,7 @@ Grab the latest version from the **Releases** page:
 ---
 
 ## 🖼 Screenshots
-<img width="390" height="465" alt="image" src="https://github.com/user-attachments/assets/3e894d23-4691-4acf-97c8-f67dc953cbc4" />
+<img width="416" height="525" alt="image" src="https://github.com/user-attachments/assets/bf78c087-ab60-4c9f-b5c2-45b352a69553" />
 
 ---
 
