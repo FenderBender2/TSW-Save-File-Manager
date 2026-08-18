@@ -26,50 +26,41 @@ Partial Class Dialog
         ActionButton = New Button()
         CloseButton = New Button()
         TextBox = New TextBox()
-        FolderList = New ComboBox()
         PromptLabel = New Label()
         HeadingLabel = New TextBox()
         SuspendLayout()
         ' 
         ' ActionButton
         ' 
-        ActionButton.Location = New Point(122, 95)
+        ActionButton.Location = New Point(198, 95)
         ActionButton.Name = "ActionButton"
         ActionButton.Size = New Size(75, 23)
-        ActionButton.TabIndex = 3
+        ActionButton.TabIndex = 2
         ActionButton.Text = "OK"
         ActionButton.UseVisualStyleBackColor = True
         ' 
         ' CloseButton
         ' 
-        CloseButton.Location = New Point(203, 95)
+        CloseButton.Location = New Point(279, 95)
         CloseButton.Name = "CloseButton"
         CloseButton.Size = New Size(75, 23)
-        CloseButton.TabIndex = 4
+        CloseButton.TabIndex = 3
         CloseButton.Text = "Close"
         CloseButton.UseVisualStyleBackColor = True
         ' 
         ' TextBox
         ' 
         TextBox.BorderStyle = BorderStyle.FixedSingle
-        TextBox.Location = New Point(117, 52)
+        TextBox.Location = New Point(108, 52)
         TextBox.Name = "TextBox"
-        TextBox.Size = New Size(136, 23)
-        TextBox.TabIndex = 2
-        ' 
-        ' FolderList
-        ' 
-        FolderList.FormattingEnabled = True
-        FolderList.Location = New Point(115, 52)
-        FolderList.Name = "FolderList"
-        FolderList.Size = New Size(138, 23)
-        FolderList.TabIndex = 1
+        TextBox.Size = New Size(214, 23)
+        TextBox.TabIndex = 1
         ' 
         ' PromptLabel
         ' 
         PromptLabel.AutoSize = True
         PromptLabel.ImageAlign = ContentAlignment.MiddleRight
-        PromptLabel.Location = New Point(33, 55)
+        PromptLabel.Location = New Point(24, 54)
         PromptLabel.Name = "PromptLabel"
         PromptLabel.Size = New Size(78, 15)
         PromptLabel.TabIndex = 7
@@ -81,7 +72,7 @@ Partial Class Dialog
         HeadingLabel.Location = New Point(12, 18)
         HeadingLabel.Name = "HeadingLabel"
         HeadingLabel.ReadOnly = True
-        HeadingLabel.Size = New Size(266, 16)
+        HeadingLabel.Size = New Size(342, 16)
         HeadingLabel.TabIndex = 8
         HeadingLabel.TabStop = False
         HeadingLabel.TextAlign = HorizontalAlignment.Center
@@ -90,10 +81,9 @@ Partial Class Dialog
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(290, 130)
+        ClientSize = New Size(366, 130)
         Controls.Add(HeadingLabel)
         Controls.Add(PromptLabel)
-        Controls.Add(FolderList)
         Controls.Add(TextBox)
         Controls.Add(CloseButton)
         Controls.Add(ActionButton)
@@ -111,7 +101,6 @@ Partial Class Dialog
     Friend WithEvents ActionButton As Button
     Friend WithEvents CloseButton As Button
     Friend WithEvents TextBox As TextBox
-    Friend WithEvents FolderList As ComboBox
     Friend WithEvents PromptLabel As Label
     Friend WithEvents HeadingLabel As TextBox
 End Class

@@ -7,14 +7,19 @@
     <StartupObject>TSW_Save_Game_Manager.My.MyApplication</StartupObject>
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
-	<ApplicationIcon>Assets\TSWSaveManager.ico</ApplicationIcon>
-	<Version>1.1.0</Version>
-	<FileVersion>1.1.0.0</FileVersion>
-	<InformationalVersion>1.1.0</InformationalVersion>
-    <Authors>Pete Lewis</Authors>
+	<ApplicationIcon>Assets\TSWSaveManager2.ico</ApplicationIcon>
+	<Version>1.2.0</Version>
+	<FileVersion>1.2.0.0</FileVersion>
+	<InformationalVersion>1.2.0</InformationalVersion>
+	<Authors>P. Lewis</Authors>
+	<Copyright>© P. Lewis 2026</Copyright>
 	<Company>TSWSaveFileManager</Company>
 	<Product>TSW Save File Manager</Product>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\TSWSaveManager2.ico" />
+  </ItemGroup>
 
   <ItemGroup>
 	<EmbeddedResource Include="Assets\TSWSaveManager.ico" />

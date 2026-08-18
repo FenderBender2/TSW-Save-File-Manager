@@ -6,9 +6,9 @@ Public Class TSWSFM
 
     Dim TSWappId As Integer
     Private Shared mutex As Mutex
-    Private RightClickedTabIndex As Integer = -1
+    Private rightClickedTabIndex As Integer = -1
 
-    ' -----------------------------------------------------------------------------------------------------------
+    ' ===========================================================================================================
     ' Form load
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub TSWSFM_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -31,24 +31,74 @@ Public Class TSWSFM
         GetSettings()
         GetVersions()
 
+        VersionSelect.Focus()
+
     End Sub
 
+    ' ===========================================================================================================
+    ' Select a TSW version from the drop-down
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub VersionSelect_SelectedIndexChanged(sender As Object, e As EventArgs) Handles VersionSelect.SelectedIndexChanged
+
+        Dim selectedName = VersionSelect.SelectedItem.ToString
+        Dim selected = TSWVersions.First(Function(v) v.Name = selectedName)
+
+        TSWappId = selected.AppID
+
+        CurrentFolder.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) & $"\My Games\{VersionSelect.Text.Replace(" ", "")}\Saved\SaveGames"
+        GetAllProfiles()
+
+        With My.Settings
+            .lastVersion = selectedName
+            .Save()
+        End With
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Select a profile from the drop-down
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub ProfileSelect_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ProfileSelect.SelectedIndexChanged
+
+        Dim profileName = GetCurrentProfile(0)
+
+        RefreshSaveFile(CurrentFolder.Text, profileName)
+        TSWCurrentProfile = "Profile" & profileName
+
+        ' Create version save folder parent if it doesnt exist
+        Dim folderPath = Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile)
+        If Not Directory.Exists(folderPath) Then Directory.CreateDirectory(folderPath)
+
+        SetupWatcher()
+        LoadTSWIcon(TSWVersions(VersionSelect.SelectedIndex))
+        GetAllTabs()
+        ListSaveFiles(folderPath)
+
+        With My.Settings
+            .lastProfile = GetCurrentProfile(1)
+            .Save()
+        End With
+
+    End Sub
+
+    ' ===========================================================================================================
+    ' All buttons
     ' -----------------------------------------------------------------------------------------------------------
     ' Save button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub SaveButton_Click(sender As Object, e As EventArgs) Handles SaveButton.Click
 
-        If NewFileName.Text = "" Then Exit Sub
+        If NewFileName.Text = "" Or Not TSWEnableFunctions Then Exit Sub
 
         Dim tabtext = TabControl.SelectedTab.Text
-        Dim cleanStr = String.Concat(NewFileName.Text.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c)))
-        Dim sourceFile = Path.Combine(CurrentFolder.Text, SaveFileName.Text)
-        Dim destFile = Path.Combine(CurrentFolder.Text, TSWSaveFolder, If(tabtext = "Main", "", tabtext), cleanStr)
+        Dim cleanStr = Path.GetFileNameWithoutExtension(String.Concat(NewFileName.Text.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c))))
+        Dim sourceFile = Path.Combine(CurrentFolder.Text, SaveFileName.Text & If(Not Path.HasExtension(SaveFileName.Text), ".sav", ""))
+        Dim destFile = Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, If(tabtext = "Main", "", tabtext), cleanStr)
 
-        If Not Path.HasExtension(destFile) Then destFile &= ".sav"
+        destFile &= If(Not Path.HasExtension(destFile), ".sav", "")
 
         If File.Exists(destFile) Then
-            Dim response = MessageBox.Show(NewFileName.Text & " already exists. Overwrite?", "Confirm Overwrite", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+            Dim response = MessageBox.Show($"{cleanStr} already exists. Overwrite?", "Confirm Overwrite", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
 
             If response = DialogResult.No Then
                 ShowTempMessage("Save file cancelled")
@@ -60,7 +110,7 @@ Public Class TSWSFM
         UpdateUI(CurrentFolder.Text)
         NewFileName.Text = ""
 
-        ShowTempMessage(Path.GetFileName(destFile) & " saved successfully")
+        ShowTempMessage($"{Path.GetFileName(cleanStr)} saved successfully")
 
     End Sub
 
@@ -69,17 +119,18 @@ Public Class TSWSFM
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub RunButton_Click(sender As Object, e As EventArgs) Handles RunButton.Click
 
-        If VersionSelect.Text = "" Or TSWappId.ToString() = "" Then Exit Sub
+        If VersionSelect.Text = "" Or TSWappId.ToString() = "" Or Not TSWEnableFunctions Then Exit Sub
 
         Try
-            Dim psi As New ProcessStartInfo()
-            psi.FileName = "steam://rungameid/" & TSWappId
-            psi.UseShellExecute = True   ' REQUIRED for URI protocols
+            Dim psi As New ProcessStartInfo With {
+                .FileName = "steam://rungameid/" & TSWappId,
+                .UseShellExecute = True   ' REQUIRED for URI protocols
+                }
 
             Process.Start(psi)
 
         Catch ex As Exception
-            MessageBox.Show("Launch failed: " & ex.Message, "Start Game", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Launch failed: {ex.Message}", "Start Game", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
 
     End Sub
@@ -95,17 +146,17 @@ Public Class TSWSFM
         End If
 
         Dim filename = CustomFileList.SelectedItems(0).SubItems(1).Text
-        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder, If(TabControl.SelectedTab.Text = "Main", "", TabControl.SelectedTab.Text))
+        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, If(TabControl.SelectedTab.Text = "Main", "", TabControl.SelectedTab.Text))
         Dim targetFolder As String = CurrentFolder.Text
-        Dim sourceFile As String = Path.Combine(folderPath, filename)
-        Dim destFile As String = Path.Combine(targetFolder, SaveFileName.Text)
+        Dim sourceFile As String = Path.Combine(folderPath, filename & If(Not Path.HasExtension(filename), ".sav", ""))
+        Dim destFile As String = Path.Combine(targetFolder, SaveFileName.Text & If(Not Path.HasExtension(SaveFileName.Text), ".sav", ""))
 
         If File.Exists(destFile) Then
             Dim msgstring = If(TSWcurrentIsSaved, "Are you sure you want to overwrite the TSW save file", "Warning: The current TSW save file has not been saved to your custom list. Continue to overwrite")
-            msgstring &= " with " & filename & "?"
+            msgstring &= $" with {filename}?"
 
             Dim boxIcon = If(TSWcurrentIsSaved, MessageBoxIcon.Question, MessageBoxIcon.Warning)
-            Dim response = MessageBox.Show(msgstring, If(Not TSWcurrentIsSaved, "Warning: ", "") & "Confirm Overwrite", MessageBoxButtons.YesNo, boxIcon)
+            Dim response = MessageBox.Show(msgstring, $"{If(Not TSWcurrentIsSaved, "Warning: ", "")}Confirm Overwrite", MessageBoxButtons.YesNo, boxIcon)
 
             If response = DialogResult.No Then
                 ShowTempMessage("Restore cancelled")
@@ -118,7 +169,7 @@ Public Class TSWSFM
         UpdateUI(CurrentFolder.Text)
         IsMyWrite = False
 
-        ShowTempMessage(filename & " restored successfully")
+        ShowTempMessage($"{filename} restored successfully")
 
     End Sub
 
@@ -133,18 +184,19 @@ Public Class TSWSFM
         End If
 
         Dim fileName = CustomFileList.SelectedItems(0).SubItems(1).Text
-        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder, GetTab)
-        Dim sourceFile As String = Path.Combine(folderPath, fileName)
+        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, GetTab)
+        Dim sourceFile As String = Path.Combine(folderPath, fileName & If(Not Path.HasExtension(fileName), ".sav", ""))
 
         If File.Exists(sourceFile) Then
-            Dim response = MessageBox.Show("Are you sure you want to delete " & Path.GetFileNameWithoutExtension(fileName) & "? Deleted files are sent to the recycle bin.", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+            Dim response = MessageBox.Show($"Are you sure you want to delete {fileName}? Deleted files are sent to the recycle bin.", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
             If response <> DialogResult.Yes Then Exit Sub
         End If
+
 
         FileIO.FileSystem.DeleteFile(sourceFile, FileIO.UIOption.OnlyErrorDialogs, FileIO.RecycleOption.SendToRecycleBin)
         ListSaveFiles(folderPath)
 
-        ShowTempMessage(fileName & " deleted and saved in Recycle Bin")
+        ShowTempMessage($"{fileName} deleted and saved in Recycle Bin")
 
     End Sub
 
@@ -156,70 +208,33 @@ Public Class TSWSFM
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Catch listview double-click event
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub CustomFileList_DoubleClick(sender As Object, e As EventArgs) Handles CustomFileList.DoubleClick
-        RestoreButton_Click(sender, e)
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    ' Trap selection of a custom save file
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub CustomFileList_Click(sender As Object, e As EventArgs) Handles CustomFileList.Click
-        NewFileName.Text = CustomFileList.SelectedItems(0).SubItems(1).Text
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    ' When the selected TSW version is changed
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub VersionSelect_SelectedIndexChanged(sender As Object, e As EventArgs) Handles VersionSelect.SelectedIndexChanged
-
-        Dim selectedName As String = VersionSelect.SelectedItem.ToString()
-        Dim selected = TSWVersions.First(Function(v) v.Name = selectedName)
-
-        TSWappId = selected.AppID
-
-        CurrentFolder.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) & "\My Games\" & VersionSelect.Text.Replace(" ", "") & "\Saved\SaveGames"
-        RefreshSaveFile(CurrentFolder.Text)
-
-        ' Create version save folder parent if it doesnt exist
-        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder) ', GetTab)
-
-        If Not Directory.Exists(folderPath) Then Directory.CreateDirectory(folderPath)
-
-        ListSaveFiles(folderPath)
-        SetupWatcher()
-        LoadTSWIcon(TSWVersions(VersionSelect.SelectedIndex))
-        GetAllTabs()
-        NewFileName.Text = ""
-
-        With My.Settings
-            .lastVersion = selectedName
-            .Save()
-        End With
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
     ' Rename button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub RenameButton_Click(sender As Object, e As EventArgs) Handles RenameButton.Click
 
-        If NewFileName.Text = "" Or CustomFileList.SelectedItems.Count = 0 Then Exit Sub
+        If NewFileName.Text = "" Or CustomFileList.SelectedItems.Count = 0 Or Not TSWEnableFunctions Then Exit Sub
 
         Dim fileName = CustomFileList.SelectedItems(0).SubItems(1).Text
-        Dim newName = NewFileName.Text
-        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder, GetTab)
-        Dim sourceFile As String = Path.Combine(folderPath, fileName)
+        Dim newName = Path.GetFileNameWithoutExtension(String.Concat(NewFileName.Text.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c))))
 
-        If Path.Combine(folderPath, newName) = sourceFile Then Exit Sub
+        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, GetTab)
+        Dim sourceFile As String = Path.Combine(folderPath, fileName & If(Not Path.HasExtension(fileName), ".sav", ""))
+        Dim targetFile As String = Path.Combine(folderPath, newName & If(Not Path.HasExtension(newName), ".sav", ""))
 
-        Dim msg = "Are you sure you want to rename " & fileName & " to " & newName & "?"
-        If File.Exists(sourceFile) AndAlso MessageBox.Show(msg, "Confirm Rename", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) = DialogResult.No Then Exit Sub
+        If targetFile = sourceFile Then Exit Sub
 
-        File.Move(Path.Combine(folderPath, fileName), Path.Combine(folderPath, newName))
+        If File.Exists(targetFile) Then
+            If MessageBox.Show($"File {newName} already exists in this folder. Do you want to create a new version of the file?", "Rename File", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) = vbNo Then Exit Sub
+            targetFile = GetUniqueFilename(targetFile)
+            newName = Path.GetFileNameWithoutExtension(targetFile)
+        Else
+            Dim msg = "Are you sure you want to rename " & fileName & " to " & newName & "?"
+            If File.Exists(sourceFile) AndAlso MessageBox.Show(msg, "Confirm Rename", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.No Then Exit Sub
+        End If
+
+        File.Move(sourceFile, targetFile)
         ListSaveFiles(folderPath)
-        ShowTempMessage(fileName & " renamed to " & newName)
+        ShowTempMessage($"{fileName} renamed to {newName}")
 
     End Sub
 
@@ -234,99 +249,51 @@ Public Class TSWSFM
         End If
 
         If Me.TabControl.TabCount < 2 Then
-            MessageBox.Show("There is only one folder available.", "Move File", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            Exit Sub
+            MessageBox.Show("There no other folders available in the current profile.", "Move File", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
 
         Dim fileName = CustomFileList.SelectedItems(0).SubItems(1).Text
-        Dim name = TSWInputBox("Move", fileName)
-
-        If name = "" Then Exit Sub
+        Dim folderName As String = TSWInputBox("Move", fileName)
+        If folderName = "" Then Exit Sub
 
         Dim currentTab = TabControl.SelectedTab.Text
-        Dim sourcefolder = Path.Combine(CurrentFolder.Text, TSWSaveFolder, If(currentTab = "Main", "", currentTab))
-        Dim targetFolder = Path.Combine(CurrentFolder.Text, TSWSaveFolder, If(name = "Main", "", name))
+        Dim sourcefolder = Path.Combine(Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile), If(currentTab = "Main", "", currentTab))
+        Dim targetFile = fileName & If(Not Path.HasExtension(fileName), ".sav", "")
+        Dim targetFolder = Path.Combine(Path.Combine(Path.Combine(CurrentFolder.Text, TSWSaveFolder), If(folderName = "Main", "", folderName)))
 
-        If MoveFiles(sourcefolder, targetFolder, fileName) Then
+        If MoveFiles(sourcefolder, targetFolder, targetFile) Then
             ListSaveFiles(sourcefolder)
-            ShowTempMessage(Path.GetFileNameWithoutExtension(fileName) & " moved successfully to " & name)
-        End If
 
-    End Sub
+            If folderName.StartsWith("Profile") Then
 
-    ' -----------------------------------------------------------------------------------------------------------
-    ' Menu Selections
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub MnuHelp_Click(sender As Object, e As EventArgs) Handles MnuHelp.Click
+                Dim profileID As String = folderName.Replace("Profile", "")
 
-        Dim hlpfrm As New HelpForm()
+                For i As Integer = 0 To ProfileArray.GetLength(0) - 1
+                    If ProfileArray(i, 0) = profileID Then folderName = ProfileArray(i, 1)
+                Next
 
-        With hlpfrm
-            .StartPosition = FormStartPosition.Manual
-            .Left = Me.Left + (Me.Width - .Width) \ 2
-            .Top = Me.Top + (Me.Height - .Height) \ 2
-
-            .Show()
-        End With
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub MnuNewTab_Click(sender As Object, e As EventArgs) Handles MnuNewTab.Click
-
-        Dim name = TSWInputBox("New")
-        If name = "" Then Exit Sub
-
-        Dim cleanName = String.Concat(name.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c)))
-        Dim folderPath As String = Path.Combine(CurrentFolder.Text, TSWSaveFolder, cleanName)
-
-        If Not Directory.Exists(folderPath) Then
-            Directory.CreateDirectory(folderPath)
-        Else
-            MessageBox.Show("The " & cleanName & " folder already exists.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Exit Sub
-        End If
-
-        Dim tp As New TabPage(cleanName)
-
-        tp.BackColor = Color.White
-        TabControl.TabPages.Add(tp)
-        TabControl.SelectedTab = tp
-        ListSaveFiles(Path.Combine(CurrentFolder.Text, TSWSaveFolder, tp.Text))
-        ShowTempMessage("New folder " & tp.Text & " created successfully")
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub MnuRenameTab_Click(sender As Object, e As EventArgs) Handles MnuRenameTab.Click
-        RenameTabs(TabControl.SelectedIndex)
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub MnuDeleteTab_Click(sender As Object, e As EventArgs) Handles MnuDeleteTab.Click
-        DeleteTabs(TabControl.SelectedIndex)
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    ' Catch tab click event
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub TabControl_MouseDown(sender As Object, e As MouseEventArgs) Handles TabControl.MouseDown
-
-        If e.Button = MouseButtons.Right Then Exit Sub
-
-        Dim tc = TabControl
-
-        For i As Integer = 0 To tc.TabPages.Count - 1
-            Dim r As Rectangle = tc.GetTabRect(i)
-
-            If r.Contains(e.Location) Then
-                Dim clickedTab As TabPage = tc.TabPages(i)
-                Dim tabText As String = clickedTab.Text
-
-                ListSaveFiles(Path.Combine(CurrentFolder.Text, TSWSaveFolder, If(tabText = "Main", "", tabText)))
+                ShowTempMessage($"{fileName} moved successfully to profile {folderName}")
+            Else
+                ShowTempMessage($"{fileName} moved successfully to {folderName}")
             End If
-        Next
+        End If
 
+    End Sub
+
+    ' ===========================================================================================================
+    ' Custom file listview events
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Catch listview double-click event
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub CustomFileList_DoubleClick(sender As Object, e As EventArgs) Handles CustomFileList.DoubleClick
+        RestoreButton_Click(sender, e)
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Trap selection of a custom save file
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub CustomFileList_Click(sender As Object, e As EventArgs) Handles CustomFileList.Click
+        NewFileName.Text = CustomFileList.SelectedItems(0).SubItems(1).Text
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
@@ -426,44 +393,6 @@ Public Class TSWSFM
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Watch for changes to the TSW save file
-    ' -----------------------------------------------------------------------------------------------------------
-
-    Private WithEvents watcher As New FileSystemWatcher()
-    Private lastEvent As DateTime = DateTime.MinValue
-
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub SetupWatcher()
-
-        With watcher
-            .EnableRaisingEvents = False
-
-            .Path = CurrentFolder.Text
-            .Filter = SaveFileName.Text
-            .NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size
-
-            .EnableRaisingEvents = True
-        End With
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub Watcher_Changed(sender As Object, e As FileSystemEventArgs) Handles watcher.Changed
-
-        If IsMyWrite Or (DateTime.Now - lastEvent).TotalMilliseconds < 200 Then Exit Sub
-        lastEvent = DateTime.Now
-
-        If Me.InvokeRequired Then
-            Me.Invoke(Sub()
-                          UpdateUI(CurrentFolder.Text)
-                      End Sub)
-        Else
-            UpdateUI(CurrentFolder.Text)
-        End If
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
     ' Set handlers to erase arrows from columns not sorted
     ' -----------------------------------------------------------------------------------------------------------
 
@@ -486,7 +415,18 @@ Public Class TSWSFM
     ' -----------------------------------------------------------------------------------------------------------
     ' Enable drag and drop from listview to tabs
     ' -----------------------------------------------------------------------------------------------------------
+    Private Function GetTabIndexAtPoint(tc As TabControl, pt As Point) As Integer
 
+        For i As Integer = 0 To tc.TabPages.Count - 1
+            Dim r As Rectangle = tc.GetTabRect(i)
+            If r.Contains(pt) Then Return i
+        Next
+
+        Return -1
+
+    End Function
+
+    ' -----------------------------------------------------------------------------------------------------------
     Private Sub CustomFileList_ItemDrag(sender As Object, e As ItemDragEventArgs) Handles CustomFileList.ItemDrag
         Dim item As ListViewItem = CType(e.Item, ListViewItem)
         DoDragDrop(item, DragDropEffects.Move)
@@ -513,29 +453,125 @@ Public Class TSWSFM
         Dim currentTab = TabControl.SelectedTab.Text
         Dim newTab As String = targetTab.Text
 
+        ShowTempMessage("")
         If newTab = currentTab Then Exit Sub
 
-        Dim sourcefolder = Path.Combine(CurrentFolder.Text, TSWSaveFolder, If(currentTab = "Main", "", currentTab))
-        Dim targetFolder = Path.Combine(CurrentFolder.Text, TSWSaveFolder, If(newTab = "Main", "", newTab))
+        Dim currentParent = Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile)
+        Dim sourcefolder = Path.Combine(currentParent, If(currentTab = "Main", "", currentTab))
+        Dim targetFolder = Path.Combine(currentParent, If(newTab = "Main", "", newTab))
+        Dim targetFile = fileName & If(Not Path.HasExtension(fileName), ".sav", "")
 
-        If MoveFiles(sourcefolder, targetFolder, fileName) Then
+        If MoveFiles(sourcefolder, targetFolder, targetFile) Then
             ListSaveFiles(sourcefolder)
-            ShowTempMessage(Path.GetFileNameWithoutExtension(fileName) & " moved to " & newTab)
+            ShowTempMessage($"{fileName} moved to {newTab}")
         End If
 
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    Private Function GetTabIndexAtPoint(tc As TabControl, pt As Point) As Integer
+    Private Sub TabControl_DragOver(sender As Object, e As DragEventArgs) Handles TabControl.DragOver
+
+        Dim pt As Point = TabControl.PointToClient(New Point(e.X, e.Y))
+
+        For i As Integer = 0 To TabControl.TabPages.Count - 1
+            Dim r As Rectangle = TabControl.GetTabRect(i)
+
+            If r.Contains(pt) AndAlso TabControl.TabPages(i).Text <> TabControl.SelectedTab.Text Then
+                ShowTempMessage($"Folder: {TabControl.TabPages(i).Text}")
+                Exit For
+            Else
+                ShowTempMessage("")
+            End If
+        Next
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub TabControl_DragLeave(sender As Object, e As EventArgs) Handles TabControl.DragLeave
+        ShowTempMessage("")
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' 'Fix' the column widths
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub CustomFileList_ColumnWidthChanged(sender As Object, e As ColumnWidthChangedEventArgs) Handles CustomFileList.ColumnWidthChanged
+        If Not suppressColumnEvents Then CustomFileList.Columns(e.ColumnIndex).Width = customFixedWidths(e.ColumnIndex)
+    End Sub
+
+    ' ===========================================================================================================
+    ' Menu control
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Menu Selections
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub MnuHelp_Click(sender As Object, e As EventArgs) Handles MnuHelp.Click
+
+        Dim hlpfrm As New HelpForm()
+
+        With hlpfrm
+            .StartPosition = FormStartPosition.Manual
+            .Left = Me.Left + (Me.Width - .Width) \ 2
+            .Top = Me.Top + (Me.Height - .Height) \ 2
+
+            .ShowDialog()
+        End With
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub MnuNewTab_Click(sender As Object, e As EventArgs) Handles MnuNewTab.Click
+        If TSWEnableFunctions Then CreateTab()
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub MnuRenameTab_Click(sender As Object, e As EventArgs) Handles MnuRenameTab.Click
+        If TSWEnableFunctions Then RenameTabs(TabControl.SelectedIndex)
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub MnuDeleteTab_Click(sender As Object, e As EventArgs) Handles MnuDeleteTab.Click
+        If TSWEnableFunctions Then DeleteTabs(TabControl.SelectedIndex)
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub MnuRenameProfile_Click(sender As Object, e As EventArgs) Handles MnuRenameProfile.Click
+        If TSWEnableFunctions Then RenameProfile()
+    End Sub
+
+    ' ===========================================================================================================
+    ' Folder tab controls
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Catch tab click event
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub TabControl_MouseDown(sender As Object, e As MouseEventArgs) Handles TabControl.MouseDown
+
+        If e.Button = MouseButtons.Right Or Not TSWEnableFunctions Then Exit Sub
+
+        Dim tc = TabControl
 
         For i As Integer = 0 To tc.TabPages.Count - 1
             Dim r As Rectangle = tc.GetTabRect(i)
-            If r.Contains(pt) Then Return i
+
+            If r.Contains(e.Location) Then
+                Dim clickedTab As TabPage = tc.TabPages(i)
+                Dim tabText As String = clickedTab.Text
+
+                ListSaveFiles(Path.Combine(CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, If(tabText = "Main", "", tabText)))
+            End If
         Next
 
-        Return -1
+    End Sub
 
-    End Function
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Set order of tabs
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub MenuCreationDate_Click(sender As Object, e As EventArgs) Handles MenuCreationDate.Click
+        If TSWEnableFunctions Then ResetTabs("Date")
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub MenuFileName_Click(sender As Object, e As EventArgs) Handles MenuFileName.Click
+        If TSWEnableFunctions Then ResetTabs("File")
+    End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     ' Drawing options for status message and tabs
@@ -579,48 +615,76 @@ Public Class TSWSFM
 
     End Sub
 
-    ' -----------------------------------------------------------------------------------------------------------
+    ' ===========================================================================================================
     ' Right-click context menu for tabs
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub TabControl_MouseUp(sender As Object, e As MouseEventArgs) Handles TabControl.MouseUp
-        If e.Button = MouseButtons.Right Then
+
+        If e.Button = MouseButtons.Right And TSWEnableFunctions Then
             For i As Integer = 0 To TabControl.TabPages.Count - 1
 
                 If TabControl.GetTabRect(i).Contains(e.Location) Then
 
                     If i = 0 Then Exit Sub
-                    RightClickedTabIndex = i
+                    rightClickedTabIndex = i
                     TabMenu.Show(TabControl, e.Location)
                     Exit Sub
 
                 End If
             Next
         End If
+
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub RenameTab_Click(sender As Object, e As EventArgs) Handles RenameTab.Click
-        If RightClickedTabIndex > 0 AndAlso RightClickedTabIndex < TabControl.TabPages.Count Then RenameTabs(RightClickedTabIndex)
+        If rightClickedTabIndex > 0 AndAlso rightClickedTabIndex < TabControl.TabPages.Count Then RenameTabs(rightClickedTabIndex)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub DeleteTab_Click(sender As Object, e As EventArgs) Handles DeleteTab.Click
-        If RightClickedTabIndex > 0 AndAlso RightClickedTabIndex < TabControl.TabPages.Count Then DeleteTabs(RightClickedTabIndex)
+        If rightClickedTabIndex > 0 AndAlso rightClickedTabIndex < TabControl.TabPages.Count Then DeleteTabs(rightClickedTabIndex)
+    End Sub
+
+    ' ===========================================================================================================
+    ' Watch for changes to the TSW save file
+    ' -----------------------------------------------------------------------------------------------------------
+
+    Private WithEvents watcher As New FileSystemWatcher()
+    Private lastEvent As DateTime = DateTime.MinValue
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub SetupWatcher()
+
+        With watcher
+            .EnableRaisingEvents = False
+
+            .Path = CurrentFolder.Text
+            .Filter = SaveFileName.Text & If(Not Path.HasExtension(SaveFileName.Text), ".sav", "")
+            .NotifyFilter = NotifyFilters.LastWrite Or NotifyFilters.FileName Or NotifyFilters.Size
+
+            .EnableRaisingEvents = True
+        End With
+
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Set order of tabs
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub MenuCreationDate_Click(sender As Object, e As EventArgs) Handles MenuCreationDate.Click
-        ResetTabs("Date")
+    Private Sub Watcher_Changed(sender As Object, e As FileSystemEventArgs) Handles watcher.Changed
+
+        If IsMyWrite Or (DateTime.Now - lastEvent).TotalMilliseconds < 200 Then Exit Sub
+        lastEvent = DateTime.Now
+
+        If Me.InvokeRequired Then
+            Me.Invoke(Sub()
+                          UpdateUI(CurrentFolder.Text)
+                      End Sub)
+        Else
+            UpdateUI(CurrentFolder.Text)
+        End If
+
     End Sub
 
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Sub MenuFileName_Click(sender As Object, e As EventArgs) Handles MenuFileName.Click
-        ResetTabs("File")
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
+    ' ===========================================================================================================
     ' Fade status messages when timer expires
     ' -----------------------------------------------------------------------------------------------------------
     Private Function MoveChannel(current As Integer, target As Integer) As Integer
