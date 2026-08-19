@@ -7,7 +7,8 @@ Automatically detects installed TSW versions and provides fast switching between
 
 ## ✨ Features
 - Auto‑detects installed TSW versions via Steam manifests  
-- Supports multiple Steam library folders    
+- Supports multiple Steam library folders
+- Supports multiple profiles    
 - Clean UI with live update when save file changes  
 - Fully portable EXE — no installation required
 - Create folders to improve save file management  
