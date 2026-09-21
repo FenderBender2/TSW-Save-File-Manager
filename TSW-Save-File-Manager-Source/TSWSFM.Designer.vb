@@ -1,4 +1,5 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
+﻿' $Id: TSWSFM.Designer.vb 1494 2026-09-21 21:33:13Z Pete $
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class TSWSFM
     Inherits System.Windows.Forms.Form
 
@@ -24,7 +25,6 @@ Partial Class TSWSFM
     Private Sub InitializeComponent()
         components = New ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(TSWSFM))
-        Label1 = New Label()
         CurrentFolder = New TextBox()
         Label2 = New Label()
         SaveFileName = New TextBox()
@@ -34,12 +34,13 @@ Partial Class TSWSFM
         VersionSelect = New ComboBox()
         Label5 = New Label()
         GroupBox1 = New GroupBox()
+        Label1 = New Label()
         Label4 = New Label()
         Label7 = New Label()
         SavedAsFileName = New TextBox()
         SaveLocation = New TextBox()
-        SysTimeStamp = New TextBox()
         SaveDate = New TextBox()
+        SysTimeStamp = New TextBox()
         StatusMessage = New RichTextBox()
         RenameButton = New Button()
         RestoreButton = New Button()
@@ -51,15 +52,16 @@ Partial Class TSWSFM
         MoveButton = New Button()
         CustomFileList = New ListView()
         imgHeaderArrows = New ImageList(components)
-        TabControl = New TabControl()
+        FolderSelect = New TabControl()
         TabPage1 = New TabPage()
         TabMenu = New ContextMenuStrip(components)
-        RenameTab = New ToolStripMenuItem()
-        DeleteTab = New ToolStripMenuItem()
-        MenuStrip1 = New MenuStrip()
+        RenameTabMenuItem = New ToolStripMenuItem()
+        DeleteTabMenuItem = New ToolStripMenuItem()
+        MainMenu = New MenuStrip()
         MnuAction = New ToolStripMenuItem()
         MnuNewTab = New ToolStripMenuItem()
         MnuRenameTab = New ToolStripMenuItem()
+        MnuCopyTab = New ToolStripMenuItem()
         MnuDeleteTab = New ToolStripMenuItem()
         ToolStripSeparator1 = New ToolStripSeparator()
         MenuOrderTabs = New ToolStripMenuItem()
@@ -72,66 +74,63 @@ Partial Class TSWSFM
         MessageTimer = New Timer(components)
         TSWIcon = New PictureBox()
         GroupBox3 = New GroupBox()
+        RunTSC = New Button()
         Label6 = New Label()
         ProfileSelect = New ComboBox()
         FadeTimer = New Timer(components)
         GroupBox4 = New GroupBox()
+        FileMenu = New ContextMenuStrip(components)
+        MoveFileMenuItem = New ToolStripMenuItem()
+        DeleteFileMenuItem = New ToolStripMenuItem()
+        LongTextDisplay = New ToolTip(components)
         GroupBox1.SuspendLayout()
         GroupBox2.SuspendLayout()
-        TabControl.SuspendLayout()
+        FolderSelect.SuspendLayout()
         TabMenu.SuspendLayout()
-        MenuStrip1.SuspendLayout()
+        MainMenu.SuspendLayout()
         CType(TSWIcon, ComponentModel.ISupportInitialize).BeginInit()
         GroupBox3.SuspendLayout()
         GroupBox4.SuspendLayout()
+        FileMenu.SuspendLayout()
         SuspendLayout()
-        ' 
-        ' Label1
-        ' 
-        Label1.AutoSize = True
-        Label1.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label1.Location = New Point(16, 25)
-        Label1.Name = "Label1"
-        Label1.Size = New Size(67, 15)
-        Label1.TabIndex = 0
-        Label1.Text = "Save Folder"
         ' 
         ' CurrentFolder
         ' 
         CurrentFolder.BorderStyle = BorderStyle.FixedSingle
         CurrentFolder.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        CurrentFolder.Location = New Point(85, 23)
+        CurrentFolder.Location = New Point(295, 20)
         CurrentFolder.Name = "CurrentFolder"
         CurrentFolder.ReadOnly = True
-        CurrentFolder.Size = New Size(399, 23)
+        CurrentFolder.Size = New Size(26, 23)
         CurrentFolder.TabIndex = 4
         CurrentFolder.TabStop = False
+        CurrentFolder.Visible = False
         ' 
         ' Label2
         ' 
         Label2.AutoSize = True
         Label2.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label2.Location = New Point(16, 54)
+        Label2.Location = New Point(20, 23)
         Label2.Name = "Label2"
-        Label2.Size = New Size(52, 15)
+        Label2.Size = New Size(60, 15)
         Label2.TabIndex = 2
-        Label2.Text = "Save File"
+        Label2.Text = "File Name"
         ' 
         ' SaveFileName
         ' 
         SaveFileName.BorderStyle = BorderStyle.FixedSingle
         SaveFileName.Font = New Font("Segoe UI", 9F)
-        SaveFileName.Location = New Point(85, 52)
+        SaveFileName.Location = New Point(82, 21)
         SaveFileName.Name = "SaveFileName"
         SaveFileName.ReadOnly = True
-        SaveFileName.Size = New Size(297, 23)
+        SaveFileName.Size = New Size(258, 23)
         SaveFileName.TabIndex = 5
         SaveFileName.TabStop = False
         ' 
         ' SaveButton
         ' 
         SaveButton.Font = New Font("Segoe UI", 9F)
-        SaveButton.Location = New Point(412, 50)
+        SaveButton.Location = New Point(412, 51)
         SaveButton.Name = "SaveButton"
         SaveButton.Size = New Size(72, 23)
         SaveButton.TabIndex = 10
@@ -142,16 +141,16 @@ Partial Class TSWSFM
         ' 
         NewFileName.BorderStyle = BorderStyle.FixedSingle
         NewFileName.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        NewFileName.Location = New Point(85, 21)
+        NewFileName.Location = New Point(82, 22)
         NewFileName.Name = "NewFileName"
-        NewFileName.Size = New Size(399, 23)
+        NewFileName.Size = New Size(402, 23)
         NewFileName.TabIndex = 8
         ' 
         ' Label3
         ' 
         Label3.AutoSize = True
         Label3.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label3.Location = New Point(16, 23)
+        Label3.Location = New Point(20, 24)
         Label3.Name = "Label3"
         Label3.Size = New Size(60, 15)
         Label3.TabIndex = 6
@@ -178,30 +177,38 @@ Partial Class TSWSFM
         ' 
         ' GroupBox1
         ' 
+        GroupBox1.Controls.Add(Label1)
         GroupBox1.Controls.Add(Label4)
         GroupBox1.Controls.Add(Label7)
         GroupBox1.Controls.Add(SavedAsFileName)
         GroupBox1.Controls.Add(SaveLocation)
-        GroupBox1.Controls.Add(SysTimeStamp)
         GroupBox1.Controls.Add(SaveDate)
         GroupBox1.Controls.Add(SaveFileName)
         GroupBox1.Controls.Add(Label2)
-        GroupBox1.Controls.Add(CurrentFolder)
-        GroupBox1.Controls.Add(Label1)
         GroupBox1.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         GroupBox1.Location = New Point(8, 117)
         GroupBox1.Name = "GroupBox1"
-        GroupBox1.Size = New Size(499, 119)
+        GroupBox1.Size = New Size(499, 83)
         GroupBox1.TabIndex = 16
         GroupBox1.TabStop = False
         GroupBox1.Tag = ""
         GroupBox1.Text = "  TSW Save File  "
         ' 
+        ' Label1
+        ' 
+        Label1.AutoSize = True
+        Label1.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Label1.Location = New Point(345, 23)
+        Label1.Name = "Label1"
+        Label1.Size = New Size(31, 15)
+        Label1.TabIndex = 26
+        Label1.Text = "Date"
+        ' 
         ' Label4
         ' 
         Label4.AutoSize = True
         Label4.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label4.Location = New Point(347, 83)
+        Label4.Location = New Point(345, 52)
         Label4.Name = "Label4"
         Label4.Size = New Size(40, 15)
         Label4.TabIndex = 25
@@ -211,7 +218,7 @@ Partial Class TSWSFM
         ' 
         Label7.AutoSize = True
         Label7.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label7.Location = New Point(16, 83)
+        Label7.Location = New Point(20, 52)
         Label7.Name = "Label7"
         Label7.Size = New Size(54, 15)
         Label7.TabIndex = 24
@@ -223,10 +230,10 @@ Partial Class TSWSFM
         SavedAsFileName.BorderStyle = BorderStyle.FixedSingle
         SavedAsFileName.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         SavedAsFileName.ForeColor = Color.Maroon
-        SavedAsFileName.Location = New Point(85, 81)
+        SavedAsFileName.Location = New Point(82, 50)
         SavedAsFileName.Name = "SavedAsFileName"
         SavedAsFileName.ReadOnly = True
-        SavedAsFileName.Size = New Size(252, 23)
+        SavedAsFileName.Size = New Size(258, 23)
         SavedAsFileName.TabIndex = 6
         SavedAsFileName.TabStop = False
         ' 
@@ -236,46 +243,46 @@ Partial Class TSWSFM
         SaveLocation.BorderStyle = BorderStyle.FixedSingle
         SaveLocation.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         SaveLocation.ForeColor = Color.Maroon
-        SaveLocation.Location = New Point(389, 81)
+        SaveLocation.Location = New Point(387, 50)
         SaveLocation.Name = "SaveLocation"
         SaveLocation.ReadOnly = True
-        SaveLocation.Size = New Size(95, 23)
+        SaveLocation.Size = New Size(97, 23)
         SaveLocation.TabIndex = 7
         SaveLocation.TabStop = False
-        ' 
-        ' SysTimeStamp
-        ' 
-        SysTimeStamp.BorderStyle = BorderStyle.FixedSingle
-        SysTimeStamp.Font = New Font("Segoe UI", 9F)
-        SysTimeStamp.Location = New Point(389, 103)
-        SysTimeStamp.Name = "SysTimeStamp"
-        SysTimeStamp.ReadOnly = True
-        SysTimeStamp.Size = New Size(95, 23)
-        SysTimeStamp.TabIndex = 16
-        SysTimeStamp.TabStop = False
-        SysTimeStamp.Visible = False
         ' 
         ' SaveDate
         ' 
         SaveDate.BorderStyle = BorderStyle.FixedSingle
         SaveDate.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        SaveDate.Location = New Point(389, 52)
+        SaveDate.Location = New Point(387, 21)
         SaveDate.Name = "SaveDate"
         SaveDate.ReadOnly = True
-        SaveDate.Size = New Size(95, 23)
+        SaveDate.Size = New Size(97, 23)
         SaveDate.TabIndex = 5
         SaveDate.TabStop = False
+        ' 
+        ' SysTimeStamp
+        ' 
+        SysTimeStamp.BorderStyle = BorderStyle.FixedSingle
+        SysTimeStamp.Font = New Font("Segoe UI", 9F)
+        SysTimeStamp.Location = New Point(272, 20)
+        SysTimeStamp.Name = "SysTimeStamp"
+        SysTimeStamp.ReadOnly = True
+        SysTimeStamp.Size = New Size(20, 23)
+        SysTimeStamp.TabIndex = 16
+        SysTimeStamp.TabStop = False
+        SysTimeStamp.Visible = False
         ' 
         ' StatusMessage
         ' 
         StatusMessage.BorderStyle = BorderStyle.None
         StatusMessage.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         StatusMessage.ForeColor = SystemColors.HotTrack
-        StatusMessage.Location = New Point(85, 46)
+        StatusMessage.Location = New Point(20, 49)
         StatusMessage.Name = "StatusMessage"
         StatusMessage.ReadOnly = True
         StatusMessage.ScrollBars = RichTextBoxScrollBars.None
-        StatusMessage.Size = New Size(236, 30)
+        StatusMessage.Size = New Size(301, 30)
         StatusMessage.TabIndex = 22
         StatusMessage.Text = "Status Message"
         StatusMessage.Visible = False
@@ -283,7 +290,7 @@ Partial Class TSWSFM
         ' RenameButton
         ' 
         RenameButton.Font = New Font("Segoe UI", 9F)
-        RenameButton.Location = New Point(334, 50)
+        RenameButton.Location = New Point(335, 51)
         RenameButton.Name = "RenameButton"
         RenameButton.Size = New Size(72, 23)
         RenameButton.TabIndex = 9
@@ -335,13 +342,13 @@ Partial Class TSWSFM
         GroupBox2.Controls.Add(FileCount)
         GroupBox2.Controls.Add(MoveButton)
         GroupBox2.Controls.Add(CustomFileList)
-        GroupBox2.Controls.Add(TabControl)
+        GroupBox2.Controls.Add(FolderSelect)
         GroupBox2.Controls.Add(DeleteButton)
         GroupBox2.Controls.Add(CloseButton)
         GroupBox2.Controls.Add(RestoreButton)
         GroupBox2.FlatStyle = FlatStyle.Flat
         GroupBox2.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        GroupBox2.Location = New Point(8, 330)
+        GroupBox2.Location = New Point(8, 295)
         GroupBox2.Name = "GroupBox2"
         GroupBox2.Size = New Size(499, 282)
         GroupBox2.TabIndex = 17
@@ -387,16 +394,16 @@ Partial Class TSWSFM
         imgHeaderArrows.ImageSize = New Size(16, 16)
         imgHeaderArrows.TransparentColor = Color.Transparent
         ' 
-        ' TabControl
+        ' FolderSelect
         ' 
-        TabControl.AllowDrop = True
-        TabControl.Controls.Add(TabPage1)
-        TabControl.Location = New Point(16, 21)
-        TabControl.Name = "TabControl"
-        TabControl.SelectedIndex = 0
-        TabControl.Size = New Size(469, 36)
-        TabControl.TabIndex = 11
-        TabControl.TabStop = False
+        FolderSelect.AllowDrop = True
+        FolderSelect.Controls.Add(TabPage1)
+        FolderSelect.Location = New Point(16, 22)
+        FolderSelect.Name = "FolderSelect"
+        FolderSelect.SelectedIndex = 0
+        FolderSelect.Size = New Size(469, 36)
+        FolderSelect.TabIndex = 11
+        FolderSelect.TabStop = False
         ' 
         ' TabPage1
         ' 
@@ -410,92 +417,98 @@ Partial Class TSWSFM
         ' 
         ' TabMenu
         ' 
-        TabMenu.Items.AddRange(New ToolStripItem() {RenameTab, DeleteTab})
-        TabMenu.Name = "ContextMenuStrip1"
-        TabMenu.Size = New Size(118, 48)
+        TabMenu.Items.AddRange(New ToolStripItem() {RenameTabMenuItem, DeleteTabMenuItem})
+        TabMenu.Name = "ContextMainMenu"
+        TabMenu.Size = New Size(154, 48)
         ' 
-        ' RenameTab
+        ' RenameTabMenuItem
         ' 
-        RenameTab.Name = "RenameTab"
-        RenameTab.Size = New Size(117, 22)
-        RenameTab.Text = "&Rename"
+        RenameTabMenuItem.Name = "RenameTabMenuItem"
+        RenameTabMenuItem.Size = New Size(153, 22)
+        RenameTabMenuItem.Text = "&Rename Folder"
         ' 
-        ' DeleteTab
+        ' DeleteTabMenuItem
         ' 
-        DeleteTab.Name = "DeleteTab"
-        DeleteTab.Size = New Size(117, 22)
-        DeleteTab.Text = "&Delete"
+        DeleteTabMenuItem.Name = "DeleteTabMenuItem"
+        DeleteTabMenuItem.Size = New Size(153, 22)
+        DeleteTabMenuItem.Text = "&Delete Folder"
         ' 
-        ' MenuStrip1
+        ' MainMenu
         ' 
-        MenuStrip1.Items.AddRange(New ToolStripItem() {MnuAction, MnuProfile, MenuAbout})
-        MenuStrip1.Location = New Point(0, 0)
-        MenuStrip1.Name = "MenuStrip1"
-        MenuStrip1.Size = New Size(515, 24)
-        MenuStrip1.TabIndex = 18
-        MenuStrip1.Text = "MenuStrip1"
+        MainMenu.Items.AddRange(New ToolStripItem() {MnuAction, MnuProfile, MenuAbout})
+        MainMenu.Location = New Point(0, 0)
+        MainMenu.Name = "MainMenu"
+        MainMenu.Size = New Size(515, 24)
+        MainMenu.TabIndex = 18
+        MainMenu.Text = "MainMenu"
         ' 
         ' MnuAction
         ' 
-        MnuAction.DropDownItems.AddRange(New ToolStripItem() {MnuNewTab, MnuRenameTab, MnuDeleteTab, ToolStripSeparator1, MenuOrderTabs})
+        MnuAction.DropDownItems.AddRange(New ToolStripItem() {MnuNewTab, MnuRenameTab, MnuCopyTab, MnuDeleteTab, ToolStripSeparator1, MenuOrderTabs})
         MnuAction.Name = "MnuAction"
-        MnuAction.Size = New Size(84, 20)
-        MnuAction.Text = "&Save Folders"
+        MnuAction.Size = New Size(57, 20)
+        MnuAction.Text = "&Folders"
         ' 
         ' MnuNewTab
         ' 
         MnuNewTab.Name = "MnuNewTab"
-        MnuNewTab.Size = New Size(153, 22)
+        MnuNewTab.Size = New Size(161, 22)
         MnuNewTab.Text = "&New Folder"
         ' 
         ' MnuRenameTab
         ' 
         MnuRenameTab.Name = "MnuRenameTab"
-        MnuRenameTab.Size = New Size(153, 22)
+        MnuRenameTab.Size = New Size(161, 22)
         MnuRenameTab.Text = "&Rename Folder"
+        ' 
+        ' MnuCopyTab
+        ' 
+        MnuCopyTab.Name = "MnuCopyTab"
+        MnuCopyTab.Size = New Size(161, 22)
+        MnuCopyTab.Text = "&Copy Folder"
         ' 
         ' MnuDeleteTab
         ' 
         MnuDeleteTab.Name = "MnuDeleteTab"
-        MnuDeleteTab.Size = New Size(153, 22)
+        MnuDeleteTab.Size = New Size(161, 22)
         MnuDeleteTab.Text = "&Delete Folder"
         ' 
         ' ToolStripSeparator1
         ' 
         ToolStripSeparator1.Name = "ToolStripSeparator1"
-        ToolStripSeparator1.Size = New Size(150, 6)
+        ToolStripSeparator1.Size = New Size(158, 6)
         ' 
         ' MenuOrderTabs
         ' 
         MenuOrderTabs.DropDownItems.AddRange(New ToolStripItem() {MenuCreationDate, MenuFileName})
         MenuOrderTabs.Name = "MenuOrderTabs"
-        MenuOrderTabs.Size = New Size(153, 22)
-        MenuOrderTabs.Text = "Order Tabs By"
+        MenuOrderTabs.Size = New Size(161, 22)
+        MenuOrderTabs.Text = "&Order Folders By"
         ' 
         ' MenuCreationDate
         ' 
         MenuCreationDate.Name = "MenuCreationDate"
         MenuCreationDate.Size = New Size(146, 22)
-        MenuCreationDate.Text = "Creation Date"
+        MenuCreationDate.Text = "&Creation Date"
         ' 
         ' MenuFileName
         ' 
         MenuFileName.Name = "MenuFileName"
         MenuFileName.Size = New Size(146, 22)
-        MenuFileName.Text = "Folder Name"
+        MenuFileName.Text = "&Folder Name"
         ' 
         ' MnuProfile
         ' 
         MnuProfile.DropDownItems.AddRange(New ToolStripItem() {MnuRenameProfile})
         MnuProfile.Name = "MnuProfile"
         MnuProfile.Size = New Size(53, 20)
-        MnuProfile.Text = "Profile"
+        MnuProfile.Text = "&Profile"
         ' 
         ' MnuRenameProfile
         ' 
         MnuRenameProfile.Name = "MnuRenameProfile"
         MnuRenameProfile.Size = New Size(154, 22)
-        MnuRenameProfile.Text = "Rename Profile"
+        MnuRenameProfile.Text = "&Rename Profile"
         ' 
         ' MenuAbout
         ' 
@@ -508,7 +521,7 @@ Partial Class TSWSFM
         ' 
         MnuHelp.Name = "MnuHelp"
         MnuHelp.Size = New Size(99, 22)
-        MnuHelp.Text = "Help"
+        MnuHelp.Text = "&Help"
         ' 
         ' MessageTimer
         ' 
@@ -525,17 +538,30 @@ Partial Class TSWSFM
         ' 
         ' GroupBox3
         ' 
+        GroupBox3.Controls.Add(RunTSC)
         GroupBox3.Controls.Add(Label6)
         GroupBox3.Controls.Add(ProfileSelect)
         GroupBox3.Controls.Add(TSWIcon)
         GroupBox3.Controls.Add(RunButton)
+        GroupBox3.Controls.Add(SysTimeStamp)
         GroupBox3.Controls.Add(Label5)
+        GroupBox3.Controls.Add(CurrentFolder)
         GroupBox3.Controls.Add(VersionSelect)
         GroupBox3.Location = New Point(8, 25)
         GroupBox3.Name = "GroupBox3"
         GroupBox3.Size = New Size(499, 86)
         GroupBox3.TabIndex = 20
         GroupBox3.TabStop = False
+        ' 
+        ' RunTSC
+        ' 
+        RunTSC.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        RunTSC.Location = New Point(413, 20)
+        RunTSC.Name = "RunTSC"
+        RunTSC.Size = New Size(72, 23)
+        RunTSC.TabIndex = 22
+        RunTSC.Text = "Run TSC"
+        RunTSC.UseVisualStyleBackColor = True
         ' 
         ' Label6
         ' 
@@ -568,26 +594,51 @@ Partial Class TSWSFM
         GroupBox4.Controls.Add(Label3)
         GroupBox4.Controls.Add(NewFileName)
         GroupBox4.Font = New Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        GroupBox4.Location = New Point(8, 242)
+        GroupBox4.Location = New Point(8, 206)
         GroupBox4.Name = "GroupBox4"
-        GroupBox4.Size = New Size(499, 82)
+        GroupBox4.Size = New Size(499, 83)
         GroupBox4.TabIndex = 23
         GroupBox4.TabStop = False
         GroupBox4.Text = "  New Save File  "
+        ' 
+        ' FileMenu
+        ' 
+        FileMenu.Items.AddRange(New ToolStripItem() {MoveFileMenuItem, DeleteFileMenuItem})
+        FileMenu.Name = "FileMenu"
+        FileMenu.Size = New Size(129, 48)
+        ' 
+        ' MoveFileMenuItem
+        ' 
+        MoveFileMenuItem.Name = "MoveFileMenuItem"
+        MoveFileMenuItem.Size = New Size(128, 22)
+        MoveFileMenuItem.Text = "&Move File"
+        ' 
+        ' DeleteFileMenuItem
+        ' 
+        DeleteFileMenuItem.Name = "DeleteFileMenuItem"
+        DeleteFileMenuItem.Size = New Size(128, 22)
+        DeleteFileMenuItem.Text = "&Delete File"
+        ' 
+        ' LongTextDisplay
+        ' 
+        LongTextDisplay.BackColor = Color.LightYellow
+        LongTextDisplay.ForeColor = SystemColors.Desktop
         ' 
         ' TSWSFM
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(515, 620)
+        ClientSize = New Size(515, 585)
         Controls.Add(GroupBox4)
         Controls.Add(GroupBox3)
         Controls.Add(GroupBox2)
         Controls.Add(GroupBox1)
-        Controls.Add(MenuStrip1)
-        FormBorderStyle = FormBorderStyle.FixedSingle
+        Controls.Add(MainMenu)
+        FormBorderStyle = FormBorderStyle.FixedDialog
         Icon = CType(resources.GetObject("$this.Icon"), Icon)
-        MainMenuStrip = MenuStrip1
+        MainMenuStrip = MainMenu
+        MaximizeBox = False
+        MinimizeBox = False
         Name = "TSWSFM"
         StartPosition = FormStartPosition.CenterScreen
         Text = "TSW Save File Manager"
@@ -595,20 +646,19 @@ Partial Class TSWSFM
         GroupBox1.PerformLayout()
         GroupBox2.ResumeLayout(False)
         GroupBox2.PerformLayout()
-        TabControl.ResumeLayout(False)
+        FolderSelect.ResumeLayout(False)
         TabMenu.ResumeLayout(False)
-        MenuStrip1.ResumeLayout(False)
-        MenuStrip1.PerformLayout()
+        MainMenu.ResumeLayout(False)
+        MainMenu.PerformLayout()
         CType(TSWIcon, ComponentModel.ISupportInitialize).EndInit()
         GroupBox3.ResumeLayout(False)
         GroupBox3.PerformLayout()
         GroupBox4.ResumeLayout(False)
         GroupBox4.PerformLayout()
+        FileMenu.ResumeLayout(False)
         ResumeLayout(False)
         PerformLayout()
     End Sub
-
-    Friend WithEvents Label1 As Label
     Friend WithEvents CurrentFolder As TextBox
     Friend WithEvents Label2 As Label
     Friend WithEvents SaveFileName As TextBox
@@ -626,7 +676,7 @@ Partial Class TSWSFM
     Friend WithEvents CustomFileList As ListView
     Friend WithEvents SaveDate As TextBox
     Friend WithEvents RenameButton As Button
-    Friend WithEvents MenuStrip1 As MenuStrip
+    Friend WithEvents MainMenu As MenuStrip
     Friend WithEvents MenuAbout As ToolStripMenuItem
     Friend WithEvents MnuHelp As ToolStripMenuItem
     Friend WithEvents SysTimeStamp As TextBox
@@ -634,18 +684,18 @@ Partial Class TSWSFM
     Friend WithEvents TSWIcon As PictureBox
     Friend WithEvents GroupBox3 As GroupBox
     Friend WithEvents imgHeaderArrows As ImageList
-    Friend WithEvents TabControl As TabControl
+    Friend WithEvents FolderSelect As TabControl
     Friend WithEvents TabPage1 As TabPage
     Friend WithEvents MnuAction As ToolStripMenuItem
     Friend WithEvents MnuNewTab As ToolStripMenuItem
     Friend WithEvents MnuRenameTab As ToolStripMenuItem
     Friend WithEvents MnuDeleteTab As ToolStripMenuItem
-    Friend WithEvents RenameTab As ToolStripMenuItem
+    Friend WithEvents RenameTabMenuItem As ToolStripMenuItem
     Friend WithEvents SaveLocation As TextBox
     Friend WithEvents MoveButton As Button
     Friend WithEvents StatusMessage As RichTextBox
     Friend WithEvents TabMenu As ContextMenuStrip
-    Friend WithEvents DeleteTab As ToolStripMenuItem
+    Friend WithEvents DeleteTabMenuItem As ToolStripMenuItem
     Friend WithEvents ToolStripSeparator1 As ToolStripSeparator
     Friend WithEvents MenuOrderTabs As ToolStripMenuItem
     Friend WithEvents MenuCreationDate As ToolStripMenuItem
@@ -660,5 +710,12 @@ Partial Class TSWSFM
     Friend WithEvents ProfileSelect As ComboBox
     Friend WithEvents MnuProfile As ToolStripMenuItem
     Friend WithEvents MnuRenameProfile As ToolStripMenuItem
+    Friend WithEvents RunTSC As Button
+    Friend WithEvents FileMenu As ContextMenuStrip
+    Friend WithEvents DeleteFileMenuItem As ToolStripMenuItem
+    Friend WithEvents MoveFileMenuItem As ToolStripMenuItem
+    Friend WithEvents Label1 As Label
+    Friend WithEvents LongTextDisplay As ToolTip
+    Friend WithEvents MnuCopyTab As ToolStripMenuItem
 
 End Class

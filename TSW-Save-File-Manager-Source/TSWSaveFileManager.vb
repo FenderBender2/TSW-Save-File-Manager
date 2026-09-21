@@ -1,32 +1,38 @@
-﻿Imports System.Globalization
+' $Id: TSWSaveFileManager.vb 1494 2026-09-21 21:33:13Z Pete $
 Imports System.IO
+Imports System.Runtime
 Imports System.Text.RegularExpressions
 Imports Microsoft.Win32
 
 Module TSWSaveFileManager
 
-    Public Const TSWSaveFolder As String = "Custom Saves"
-    Public Const TSWSaveFileName As String = "TSWSaveGame_"
-    Const TSWTitle As String = "Train Sim World"
+    Private Const TSWTITLE As String = "Train Sim World"
 
-    Public ReadOnly TSWSteamRoot As String = GetSteamRoot()
+    Public Const TSWSAVEFILENAME As String = "TSWSaveGame_"
+    Public Const TSWSAVEFOLDER As String = "Custom Saves"
 
+    Public TSWCustomParent As String
     Public TSWCurrentProfile As String
+    Public TSWCurrentProfilePath As String
+    Public TSCappId As Integer = 0
+    Public TSWappId As Integer
     Public TSWVersions As New List(Of (Name As String, Location As String, AppID As Integer))
     Public TSWcurrentIsSaved As Boolean
     Public TSWEnableFunctions As Boolean = False
-    Public IsMyWrite As Boolean = False
+
+    Public isMyWrite As Boolean = False
     Public lastColumn As Integer
     Public lastOrder As SortOrder
     Public lastVersion As String
+    Public rightClickedTabIndex As Integer = -1
+    Public suppressColumnEvents As Boolean = False
 
     Public arrowUp As Bitmap
     Public arrowDown As Bitmap
 
     Public customFixedWidths() As Integer = {19, 346, 100, 0}
-    Public suppressColumnEvents As Boolean = False
-
-    Public ProfileArray(,) As String
+    Public profileArray(,) As String
+    Public copyProfileArray(,) As String
 
     ' -----------------------------------------------------------------------------------------------------------
     ' Find the installation location of Steam applicatons
@@ -52,22 +58,102 @@ Module TSWSaveFileManager
     End Function
 
     ' -----------------------------------------------------------------------------------------------------------
+    ' Find the save game folder
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Function GetSaveFolder(TSWName As String) As String
+
+        Dim folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) & $"\My Games\{TSWName.Replace(" ", "")}\Saved\SaveGames"
+        Dim fld As String = Directory.GetDirectories(folder).Select(Function(f) Path.GetFileName(f)).FirstOrDefault(Function(n) Not n.Equals(TSWSAVEFOLDER, StringComparison.OrdinalIgnoreCase))
+
+        Return Path.Combine(folder, If(fld = "", "", fld))
+
+    End Function
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Process the selected version
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Sub SelectVersion(ii As PictureBox, vs As ComboBox, cf As TextBox)
+
+        Dim selectedName = vs.SelectedItem.ToString
+        Dim selectedItem = TSWVersions.First(Function(v) v.Name = selectedName)
+        Dim folder = GetSaveFolder(vs.Text)
+
+        LoadTSWIcon(ii, TSWVersions(vs.SelectedIndex))
+
+        TSWappId = selectedItem.AppID
+
+        If Not Directory.Exists(folder) Then
+            With TSWSFM
+                .ProfileSelect.Items.Clear()
+                .ProfileSelect.Text = ""
+                .SaveFileName.Text = ""
+                .SavedAsFileName.Text = ""
+                .SaveDate.Text = ""
+                .SaveLocation.Text = ""
+                .NewFileName.Text = ""
+                .FileCount.Text = ""
+                .CustomFileList.Items.Clear()
+            End With
+
+            MessageBox.Show($"Unable to find save game folder for {vs.SelectedItem}. You may need to run the game first and save a game.",
+                            "Version Select", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            Exit Sub
+        End If
+
+        TSWCustomParent = Path.Combine(folder, TSWSAVEFOLDER)
+        cf.Text = folder
+        GetAllProfiles(folder)
+
+        With My.Settings
+            .lastVersion = selectedName
+            .Save()
+        End With
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
     ' Get the details of the version
     ' -----------------------------------------------------------------------------------------------------------
-    Private Sub GetVersionDetails(lineText As String, folderPath As String)
+    Private Sub GetVersionDetails(lineText As String, folderPath As String, Optional isTWS As Boolean = True)
 
         Dim dirMatch = Regex.Match(lineText, """installdir""\s+""([^""]+)""")
 
-        If dirMatch.Success Then
-
+            If dirMatch.Success Then
             Dim appIdMatch = Regex.Match(lineText, """appid""\s*""(\d+)""") ' TSW app ID
             Dim appId As Integer = Integer.Parse(appIdMatch.Groups(1).Value)
             Dim installDir = dirMatch.Groups(1).Value
             Dim fullPath = Path.Combine(folderPath, "common", installDir)
 
-            TSWVersions.Add((Path.GetFileName(fullPath), fullPath, appId))
-
+            If isTWS Then
+                TSWVersions.Add((Path.GetFileName(fullPath), fullPath, appId))
+            ElseIf File.Exists("TSCEnabledb-HDfhymdS447pwdbvH.flag") Then
+                TSCappId = appId
+            End If
         End If
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Process the selected version
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Sub SelectProfile(vs As ComboBox, fs As TabControl, folder As String)
+
+        Dim profileName = GetCurrentProfile(TSWSFM.ProfileSelect, 0)
+
+        RefreshSaveFile(folder, profileName)
+        TSWCurrentProfile = "Profile" & profileName
+
+        ' Create version save folder parent if it doesnt exist
+        TSWCurrentProfilePath = Path.Combine(TSWCustomParent, TSWCurrentProfile)
+        If Not Directory.Exists(TSWCurrentProfilePath) Then Directory.CreateDirectory(TSWCurrentProfilePath)
+
+        GetAllTabs(fs)
+        ListSaveFiles(TSWCurrentProfilePath)
+
+        With My.Settings
+            .lastProfile = GetCurrentProfile(TSWSFM.ProfileSelect, 1)
+            .Save()
+        End With
 
     End Sub
 
@@ -105,12 +191,12 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     ' Get the currently selected profile (0 = profile ID, 1 = profile friendly name)
     ' -----------------------------------------------------------------------------------------------------------
-    Public Function GetCurrentProfile(Optional col As Integer = 0) As String
+    Public Function GetCurrentProfile(cb As ComboBox, Optional col As Integer = 0) As String
 
-        Dim idx As Integer = TSWSFM.ProfileSelect.SelectedIndex
+        Dim idx As Integer = cb.SelectedIndex
         If idx < 0 Then Return ""
 
-        Return ProfileArray(idx, col)
+        Return profileArray(idx, col)
 
     End Function
 
@@ -140,7 +226,7 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub GetSettings()
 
-        IsMyWrite = False
+        isMyWrite = False
 
         If String.IsNullOrEmpty(My.Settings.lastSortOrder) Or String.IsNullOrEmpty(My.Settings.lastSortColumn) Then
             lastColumn = 1
@@ -168,7 +254,6 @@ Module TSWSaveFileManager
                 .OwnerDraw = True
 
                 ' Set columns in list item
-
                 With .Columns
                     .Clear()
                     .Add("", customFixedWidths(0), HorizontalAlignment.Right)
@@ -179,7 +264,67 @@ Module TSWSaveFileManager
             End With
         End With
 
-        TSWSFM.TabControl.DrawMode = TabDrawMode.OwnerDrawFixed
+        TSWSFM.FolderSelect.DrawMode = TabDrawMode.OwnerDrawFixed
+        TSWSFM.LongTextDisplay.OwnerDraw = True
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Populate the version drop-down with all versions of TSW that are installed
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Sub GetVersions()
+
+        Dim steamRoot = GetSteamRoot()
+        If steamRoot Is Nothing Then Exit Sub
+
+        Dim libraries As New List(Of String)
+        Dim vdfPath = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf")
+        If Not File.Exists(vdfPath) Then Exit Sub
+
+        For Each line In File.ReadAllLines(vdfPath)
+            Dim m = Regex.Match(line, """path""\s+""([^""]+)""")
+            If m.Success Then libraries.Add(m.Groups(1).Value.Replace("\\\\", "\"))
+        Next
+
+        For Each libPath In libraries
+            Dim manifestDir = Path.Combine(libPath, "steamapps")
+            If Not Directory.Exists(manifestDir) Then Continue For
+
+            For Each manifest In Directory.GetFiles(manifestDir, "appmanifest_*.acf")
+                Dim text = File.ReadAllText(manifest)
+
+                If text.Contains(TSWTITLE) Then
+                    GetVersionDetails(text, manifestDir)
+                ElseIf text.Contains("Train Simulator Classic") Then
+                    GetVersionDetails(text, manifestDir, False)
+                End If
+            Next
+        Next
+
+        TSWSFM.RunTSC.Visible = TSCappId <> 0
+
+        If TSWVersions.Count < 1 Then
+            MessageBox.Show("No TSW installations found in any Steam folders.",
+                            "TSW Save File Manager", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            Exit Sub
+        ElseIf TSWVersions.Count > 1 Then
+            TSWVersions = TSWVersions.OrderBy(Function(v) v.AppID).ToList()
+        End If
+
+        With TSWSFM.VersionSelect
+            For Each v In TSWVersions
+                .Items.Add(v.Name)
+            Next
+
+            If .Items.Count = 1 Then ' This will trigger the selection event on the Version select dropdown
+                .SelectedIndex = 0
+            ElseIf My.Settings.lastVersion <> "" Then
+                Dim verIdx = .FindStringExact(My.Settings.lastVersion)
+                .SelectedIndex = If(verIdx >= 0, verIdx, 0)
+            End If
+        End With
+
+        TSWEnableFunctions = True
 
     End Sub
 
@@ -188,7 +333,7 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub ListSaveFiles(folderpath As String)
 
-        If folderpath = TSWSaveFolder Or TSWSFM.CurrentFolder.Text = "" Then Exit Sub
+        If folderpath = TSWSAVEFOLDER Or TSWSFM.CurrentFolder.Text = "" Then Exit Sub
 
         Dim files = Directory.GetFiles(folderpath)
         Dim saveTimeStamp = TSWSFM.SysTimeStamp.Text.Trim()
@@ -217,10 +362,8 @@ Module TSWSaveFileManager
             TSWSFM.CustomFileList.Items.Add(item)
         Next
 
-        Dim currentParent = Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile)
-
         With TSWSFM
-            Dim savedText() = Split(FindSaveFile(currentParent, .SysTimeStamp.Text.Trim()), "|"c, 2)
+            Dim savedText() = Split(FindSaveFile(TSWCurrentProfilePath, .SysTimeStamp.Text.Trim()), "|"c, 2)
 
             ' Set attributes of TSW save file location
             With .SavedAsFileName
@@ -243,7 +386,7 @@ Module TSWSaveFileManager
             suppressColumnEvents = False
         End With
 
-        Dim count = Directory.EnumerateFiles(currentParent, "*.sav", SearchOption.AllDirectories).Count()
+        Dim count = Directory.EnumerateFiles(TSWCurrentProfilePath, "*.sav", SearchOption.AllDirectories).Count()
         TSWSFM.FileCount.Text = $"Total File Count:  {count}"
 
     End Sub
@@ -253,7 +396,7 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub RefreshSaveFile(parentDir As String, profileName As String)
 
-        Dim files = Directory.GetFiles(parentDir, TSWSaveFileName & profileName & ".sav")
+        Dim files = Directory.GetFiles(parentDir, TSWSAVEFILENAME & profileName & ".sav")
 
         If files.Length = 0 Then
             TSWSFM.SaveFileName.Text = ""
@@ -270,74 +413,25 @@ Module TSWSaveFileManager
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Populate the version drop-down with all versions of TSW that are installed
-    ' -----------------------------------------------------------------------------------------------------------
-    Public Sub GetVersions()
-
-        If TSWSteamRoot Is Nothing Then Exit Sub
-
-        Dim libraries As New List(Of String)
-        Dim vdfPath = Path.Combine(TSWSteamRoot, "steamapps", "libraryfolders.vdf")
-        If Not File.Exists(vdfPath) Then Exit Sub
-
-        For Each line In File.ReadAllLines(vdfPath)
-            Dim m = Regex.Match(line, """path""\s+""([^""]+)""")
-            If m.Success Then libraries.Add(m.Groups(1).Value.Replace("\\\\", "\"))
-        Next
-
-        For Each libPath In libraries
-            Dim manifestDir = Path.Combine(libPath, "steamapps")
-            If Not Directory.Exists(manifestDir) Then Continue For
-
-            For Each manifest In Directory.GetFiles(manifestDir, "appmanifest_*.acf")
-                Dim text = File.ReadAllText(manifest)
-                If text.Contains(TSWTitle) Then GetVersionDetails(text, manifestDir)
-            Next
-        Next
-
-        If TSWVersions.Count < 1 Then
-            MessageBox.Show("No TSW installations found in any Steam folders.", "TSW Save File Manager", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-            Exit Sub
-        ElseIf TSWVersions.Count > 1 Then
-            TSWVersions = TSWVersions.OrderBy(Function(v) v.Name).ToList()
-        End If
-
-        With TSWSFM.VersionSelect
-            For Each v In TSWVersions
-                .Items.Add(v.Name)
-            Next
-
-            If .Items.Count = 1 Then
-                .SelectedIndex = 0
-            ElseIf My.Settings.lastVersion <> "" Then
-                Dim verIdx = .FindStringExact(My.Settings.lastVersion)
-                .SelectedIndex = If(verIdx >= 0, verIdx, 0)
-            End If
-        End With
-
-        TSWEnableFunctions = True
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
     ' Populate the profile drop-down with all profiles in the selected version
     ' -----------------------------------------------------------------------------------------------------------
-    Public Sub GetAllProfiles()
+    Public Sub PopulateProfileArray(folder As String, ByRef pArray(,) As String, pl As ComboBox)
 
-        TSWSFM.ProfileSelect.Items.Clear()
-        TSWSFM.ProfileSelect.Text = ""
+        Dim savefiles = Directory.GetFiles(folder, TSWSAVEFILENAME & "*.sav")
+        ReDim pArray(savefiles.Length - 1, 1)
 
-        Dim savefiles = Directory.GetFiles(TSWSFM.CurrentFolder.Text, TSWSaveFileName & "*.sav")
-        ReDim ProfileArray(savefiles.Length - 1, 1)
+        pl.Items.Clear()
 
         For i As Integer = 0 To savefiles.Length - 1
+
             Dim fileName As String = Path.GetFileName(savefiles(i))
             fileName = Path.GetFileNameWithoutExtension(fileName)
 
-            If fileName.StartsWith(TSWSaveFileName) Then
-                Dim profileID As String = fileName.Substring(TSWSaveFileName.Length)
+            If fileName.StartsWith(TSWSAVEFILENAME) Then
+                Dim profileID As String = fileName.Substring(TSWSAVEFILENAME.Length)
                 Dim friendlyName As String = profileID
-                Dim profileDir = Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, "Profile" & profileID)
+                '                Dim profileDir = Path.Combine(TSWCustomParent, "Profile" & profileID)
+                Dim profileDir = Path.Combine(folder, TSWSAVEFOLDER, "Profile" & profileID)
 
                 If Directory.Exists(profileDir) Then
                     Dim tagfiles = Directory.GetFiles(profileDir, "*.tag")
@@ -348,16 +442,28 @@ Module TSWSaveFileManager
                     Next
                 End If
 
-                ProfileArray(i, 0) = profileID
-                ProfileArray(i, 1) = friendlyName
+                pArray(i, 0) = profileID
+                pArray(i, 1) = friendlyName
 
                 ' Add friendly name to ComboBox
-                TSWSFM.ProfileSelect.Items.Add(friendlyName)
+                pl.Items.Add(friendlyName)
             End If
         Next
 
-        If TSWSFM.ProfileSelect.Items.Count = 0 Then
-            With TSWSFM
+        If pl.Items.Count = 1 Then pl.SelectedIndex = 0
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Sub GetAllProfiles(folder As String)
+
+        With TSWSFM
+            .ProfileSelect.Items.Clear()
+            .ProfileSelect.Text = ""
+
+            PopulateProfileArray(folder, profileArray, .ProfileSelect)
+
+            If .ProfileSelect.Items.Count = 0 Then
                 .SaveFileName.Text = ""
                 .SavedAsFileName.Text = ""
                 .SaveDate.Text = ""
@@ -365,13 +471,13 @@ Module TSWSaveFileManager
                 .NewFileName.Text = ""
                 .FileCount.Text = ""
                 .CustomFileList.Items.Clear()
-            End With
 
-            MessageBox.Show("No save game files found for this version.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Exit Sub
-        End If
+                MessageBox.Show("No save game files found for this version.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Exit Sub
+            End If
+        End With
 
-        With TSWSFM.ProfileSelect
+        With TSWSFM.ProfileSelect ' This will trigger the selection event on the Profile select dropdown
             If .Items.Count = 1 Then
                 .SelectedIndex = 0
             ElseIf My.Settings.lastProfile <> "" Then
@@ -383,42 +489,45 @@ Module TSWSaveFileManager
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Set up tabs using subfolders within the custom save file folder
-    ' -----------------------------------------------------------------------------------------------------------
-    Public Sub GetAllTabs()
-
-        Dim folderTab As TabControl = TSWSFM.TabControl
-        Dim parentFolder = Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile)
-        Dim lastOrder = My.Settings.lastTabOrder
-
-        folderTab.Visible = False
-        folderTab.TabPages(0).Select()
-
-        While folderTab.TabPages.Count > 1
-            folderTab.TabPages.RemoveAt(1)
-        End While
-
-        For Each folder As String In Directory.GetDirectories(parentFolder).OrderBy(Function(f) If(lastOrder = "Date", Directory.GetCreationTime(f), Path.GetFileName(f)))
-            Dim tp As New TabPage(Path.GetFileName(folder)) With {.BackColor = Color.White}
-            folderTab.TabPages.Add(tp)
-        Next
-
-        folderTab.Visible = True
-        TSWSFM.MenuFileName.Checked = If(lastOrder = "Date", False, True)
-        TSWSFM.MenuCreationDate.Checked = If(lastOrder = "Date", True, False)
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
     ' Refresh the TWS save file details and custom save file listview
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub UpdateUI(targetFolder As String)
 
-        Dim profileName = GetCurrentProfile(0)
+        Dim profileName = GetCurrentProfile(TSWSFM.ProfileSelect, 0)
         RefreshSaveFile(targetFolder, profileName)
 
-        Dim tabName = TSWSFM.TabControl.SelectedTab.Text
-        ListSaveFiles(Path.Combine(targetFolder, TSWSaveFolder, TSWCurrentProfile, If(tabName = "Main", "", tabName)))
+        Dim tabName = TSWSFM.FolderSelect.SelectedTab.Text
+        ListSaveFiles(Path.Combine(targetFolder, TSWSAVEFOLDER, TSWCurrentProfile, If(tabName = "Main", "", tabName)))
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Sort the columns in the custom file list using the custom ListViewItemComparer class
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Sub ColumnHeaderClick(cf As ListView, col As Integer)
+
+        If col < 1 Then
+            Exit Sub
+        ElseIf col = lastColumn Then
+            lastOrder = If(lastOrder = SortOrder.Ascending, SortOrder.Descending, SortOrder.Ascending)
+        Else
+            lastColumn = col
+            lastOrder = SortOrder.Ascending
+        End If
+
+        With cf
+            Dim headerRect As New Rectangle(0, 0, .Width, .Font.Height + 8)
+
+            .ListViewItemSorter = New ListViewItemComparer(col, lastOrder)
+            .Sort()
+            .Invalidate(headerRect)
+        End With
+
+        With My.Settings
+            .lastSortColumn = lastColumn
+            .lastSortOrder = lastOrder.ToString()
+            .Save()
+        End With
 
     End Sub
 
@@ -456,9 +565,47 @@ Module TSWSaveFileManager
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
+    ' Calculate colour fade for each channel R G B
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Function MoveChannel(current As Integer, target As Integer) As Integer
+
+        Dim stepSize As Integer = Math.Max(1, Math.Abs(current - target) \ 3)
+
+        If current < target Then
+            Return Math.Min(target, current + stepSize)
+        ElseIf current > target Then
+            Return Math.Max(target, current - stepSize)
+        Else
+            Return current
+        End If
+
+    End Function
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Fade colour on each tick of the fade timer
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Sub FadeColours(tm As Timer)
+
+        Dim r = MoveChannel(CurrentColour.R, EndColour.R)
+        Dim g = MoveChannel(CurrentColour.G, EndColour.G)
+        Dim b = MoveChannel(CurrentColour.B, EndColour.B)
+
+        CurrentColour = Color.FromArgb(r, g, b)
+        TSWSFM.StatusMessage.ForeColor = CurrentColour
+
+        ' Stop when close enough to the target colour
+        If r = EndColour.R AndAlso g = EndColour.G AndAlso b = EndColour.B Then
+            tm.Stop()
+            TSWSFM.StatusMessage.Visible = False
+            TSWSFM.StatusMessage.ForeColor = StartColour
+        End If
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
     ' Get the selected TSW icon
     ' -----------------------------------------------------------------------------------------------------------
-    Public Sub LoadTSWIcon(selectedVersion As (Name As String, Location As String, AppID As Integer))
+    Public Sub LoadTSWIcon(ii As PictureBox, selectedVersion As (Name As String, Location As String, AppID As Integer))
 
         Dim WinNoEdit As String = Path.Combine(selectedVersion.Location, "WindowsNoEditor")
         If Not Directory.Exists(WinNoEdit) Then Exit Sub
@@ -467,48 +614,32 @@ Module TSWSaveFileManager
 
         If exePath IsNot Nothing Then
             Dim ico = Icon.ExtractAssociatedIcon(exePath)
-            TSWSFM.TSWIcon.Image = ico.ToBitmap()
+            ii.Image = ico.ToBitmap()
         Else
-            TSWSFM.TSWIcon.Image = Nothing
+            ii.Image = Nothing
         End If
 
     End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    ' Return the currently selected tab name
-    ' -----------------------------------------------------------------------------------------------------------
-    Public Function GetTab()
-        Dim selectedTab = TSWSFM.TabControl.SelectedTab.Text
-        Return If(selectedTab = "Main", "", selectedTab)
-    End Function
 
     ' -----------------------------------------------------------------------------------------------------------
     ' Call the dialog form
     ' -----------------------------------------------------------------------------------------------------------
     Public Function TSWInputBox(dialogType As String, Optional sourceName As String = "") As String
 
-        Dim dlg As Form
+        Dim dlg = If(dialogType = "Move", New MoveDialog(), If(dialogType = "Copy", New CopyDialog(), New TSWDialog(dialogType)))
+        Dim newDlg = If(dialogType = "Move", DirectCast(dlg, MoveDialog), If(dialogType = "Copy", DirectCast(dlg, CopyDialog), DirectCast(dlg, TSWDialog)))
 
-        If dialogType = "Move" Then
-            dlg = New MoveDialog()
-        Else
-            dlg = New Dialog(dialogType)
-        End If
-
-        If TypeOf dlg Is Dialog Then
-            DirectCast(dlg, Dialog).ObjectName = sourceName
-            DirectCast(dlg, Dialog).Mode = dialogType
+        If TypeOf dlg Is TSWDialog Then
+            newDlg.ObjectName = sourceName
+            newDlg.Mode = dialogType
         ElseIf TypeOf dlg Is MoveDialog Then
-            DirectCast(dlg, MoveDialog).ObjectName = sourceName
+            newDlg.ObjectName = sourceName
+        ElseIf TypeOf dlg Is CopyDialog Then
+            newDlg.ObjectName = sourceName
+            '            If Not PopulateVersions(Nothing) Then Return Nothing
         End If
 
-        If dlg.ShowDialog(TSWSFM) = DialogResult.OK Then
-            If TypeOf dlg Is Dialog Then
-                Return DirectCast(dlg, Dialog).ResultName
-            ElseIf TypeOf dlg Is MoveDialog Then
-                Return DirectCast(dlg, MoveDialog).ResultName
-            End If
-        End If
+        If dlg.ShowDialog(TSWSFM) = DialogResult.OK Then Return newDlg.ResultName
 
         Return Nothing
 
@@ -520,10 +651,12 @@ Module TSWSaveFileManager
     Public Function MoveFiles(sourceFolder As String, targetFolder As String, Optional fileName As String = "") As Boolean
 
         If Not Directory.Exists(sourceFolder) Then
-            MessageBox.Show($"Source folder {sourceFolder} does not exist.", "Move Files", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show($"Source folder {sourceFolder} does not exist.",
+                            "Move Files", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Return False
         ElseIf Not Directory.Exists(targetFolder) Then
-            MessageBox.Show($"Target folder {targetFolder} does not exist.", "Move Files", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show($"Target folder {targetFolder} does not exist.",
+                            "Move Files", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Return False
         End If
 
@@ -532,7 +665,8 @@ Module TSWSaveFileManager
             Dim file1 = Path.GetFileNameWithoutExtension(fileName)
 
             If Not File.Exists(sourceFile) Then
-                MessageBox.Show($"File {file1} does not exist in folder {sourceFolder}.", "Move Files", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                MessageBox.Show($"File {file1} does not exist in folder {sourceFolder}.",
+                                "Move Files", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
                 Return False
             End If
 
@@ -559,9 +693,9 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     ' Rename a profile
     ' -----------------------------------------------------------------------------------------------------------
-    Public Sub RenameProfile()
+    Public Sub RenameProfile(cb As ComboBox)
 
-        Dim currName As String = GetCurrentProfile(1)
+        Dim currName As String = GetCurrentProfile(TSWSFM.ProfileSelect, 1)
         Dim newName = TSWInputBox("Profile", currName)
         If newName Is Nothing Then Exit Sub
 
@@ -573,208 +707,109 @@ Module TSWSaveFileManager
 
         Dim createTag As Boolean = True
 
-        Do Until newName <> ""
-            If newName = "" Then
-                newName = ProfileArray(idx, 0)
-                createTag = False
-            Else
-                If Directory.GetFiles(Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder), newName & ".tag", SearchOption.AllDirectories).Length > 0 Then
-                    MessageBox.Show($"Profile {newName} already exists.", "Rename Profile", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
-                    newName = ""
-                End If
+        If newName = "" Then
+            newName = profileArray(idx, 0)
+            createTag = False
+        Else
+            If Directory.GetFiles(TSWCustomParent, newName & ".tag", SearchOption.AllDirectories).Length > 0 Then
+                MessageBox.Show($"Profile {newName} already exists.", "Rename Profile", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+                Exit Sub
             End If
-        Loop
+        End If
 
-        Dim oldFileName = Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, currName & ".tag")
+        Dim oldFileName = Path.Combine(TSWCurrentProfilePath, currName & ".tag")
         If File.Exists(oldFileName) Then File.Delete(oldFileName)
 
-        If createTag Then File.WriteAllText(Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, newName & ".tag"), "")
-        ProfileArray(idx, 1) = newName
-        TSWSFM.ProfileSelect.Items(TSWSFM.ProfileSelect.SelectedIndex) = newName
+        If createTag Then File.WriteAllText(Path.Combine(TSWCurrentProfilePath, newName & ".tag"), "")
+        profileArray(idx, 1) = newName
+        cb.Items(cb.SelectedIndex) = newName
 
         ShowTempMessage($"Profile {currName} renamed to {newName}")
 
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Create a new tab
+    ' Custom draw the listview  headers
     ' -----------------------------------------------------------------------------------------------------------
-    Public Sub CreateTab()
+    Public Sub DrawListHeaders(sender As Object, e As DrawListViewColumnHeaderEventArgs)
 
-        Dim name As String = ""
-        Dim cleanName As String = ""
+        Dim cf As ListView = DirectCast(sender, ListView)
+        Dim headerHeight As Integer = e.Bounds.Height - 4
+        Dim rect As New Rectangle(e.Bounds.X, e.Bounds.Y, e.Bounds.Width, headerHeight)
 
-        Do Until name <> ""
-            name = TSWInputBox("New")
-            If name = "" Then Exit Sub
+        Using bgBrush As New SolidBrush(Color.FromArgb(240, 240, 240)) ' light grey
+            e.Graphics.FillRectangle(bgBrush, rect)
+        End Using
 
-            cleanName = String.Concat(name.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c)))
-            cleanName = Path.GetFileNameWithoutExtension(cleanName)
+        ' --- Draw bold text, left aligned ---
+        Dim boldFont As New Font(cf.Font, FontStyle.Bold)
+        Dim sf As New StringFormat() With {.LineAlignment = StringAlignment.Near}
+        Dim paddedRect As New Rectangle(rect.X + 4, rect.Y, rect.Width - 4, rect.Height)
 
-            Dim folderPath As String = Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, cleanName)
+        e.Graphics.DrawString(e.Header.Text, boldFont, Brushes.Black, paddedRect, sf)
 
-            If Not Directory.Exists(folderPath) Then
-                Directory.CreateDirectory(folderPath)
-            Else
-                MessageBox.Show($"The {cleanName} folder already exists.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                name = ""
-            End If
-        Loop
+        ' --- Draw arrow on sorted column ---
+        If e.ColumnIndex = lastColumn Then
 
-        Dim tp As New TabPage(cleanName)
+            Dim arrowImg As Image = TSWSFM.imgHeaderArrows.Images(If(lastOrder = SortOrder.Ascending, 0, 1))
 
-        tp.BackColor = Color.White
-        TSWSFM.TabControl.TabPages.Add(tp)
-        TSWSFM.TabControl.SelectedTab = tp
+            Dim scale As Single = 0.5F   ' 50% size
+            Dim newW As Integer = CInt(arrowImg.Width * (scale + 0.1))
+            Dim newH As Integer = CInt(arrowImg.Height * (scale - 0.1))
 
-        ListSaveFiles(Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, tp.Text))
-        ShowTempMessage($"New folder {tp.Text} created successfully")
+            Dim x As Integer = rect.Right - newW - 4
+            Dim y As Integer = rect.Top + (rect.Height - newH) \ 2
 
-    End Sub
+            e.Graphics.DrawImage(arrowImg, New Rectangle(x, y, newW, newH))
 
-    ' -----------------------------------------------------------------------------------------------------------
-    ' Rename a custom tab
-    ' -----------------------------------------------------------------------------------------------------------
-    Public Sub RenameTabs(tabIndex As Integer)
-
-        If tabIndex = 0 Then
-            MessageBox.Show("The Main folder cannot be renamed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Exit Sub
         End If
 
-        Dim oldName = TSWSFM.TabControl.TabPages(tabIndex).Text
-        Dim name As String = ""
-        Dim cleanName As String = ""
-        Dim sourceFolder As String = ""
-        Dim targetFolder As String = ""
-
-        Do Until name <> ""
-            name = TSWInputBox("Rename", oldName)
-            If name = "" Then Exit Sub
-
-            cleanName = String.Concat(name.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c)))
-            cleanName = Path.GetFileNameWithoutExtension(cleanName)
-
-            If cleanName = oldName Then Exit Sub
-
-            Dim currentParent = Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile)
-            sourceFolder = Path.Combine(currentParent, oldName)
-            targetFolder = Path.Combine(currentParent, cleanName)
-
-            If Directory.Exists(targetFolder) Then
-                MessageBox.Show($"The {cleanName} folder already exists.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                name = ""
-            End If
-        Loop
-
-        TSWSFM.TabControl.TabPages(tabIndex).Text = cleanName
-        Directory.Move(sourceFolder, targetFolder)
-        ShowTempMessage($"Folder {oldName} renamed to {cleanName} successfully")
-
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Delete a custom tab
+    ' Format column 0 of the custom list for the display of ticks
     ' -----------------------------------------------------------------------------------------------------------
-    Public Sub DeleteTabs(tabIndex As Integer)
+    Public Sub DrawTick(sender As Object, e As DrawListViewSubItemEventArgs)
 
-        Dim filesMoved As Boolean = False
-        Dim tabName = TSWSFM.TabControl.TabPages(tabIndex).Text
+        Dim cf As ListView = DirectCast(sender, ListView)
 
-        If tabIndex = 0 Then
-            MessageBox.Show("The Main folder cannot be deleted.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Exit Sub
+        If e.ColumnIndex = 0 Then
+            Dim text As String = e.SubItem.Text
+
+            If text <> "" Then
+                Dim flags As TextFormatFlags = TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine
+                Dim textColor As Color = Color.DarkRed
+
+                TextRenderer.DrawText(e.Graphics, text, cf.Font, e.Bounds, textColor, flags)
+            End If
+        Else
+            e.DrawDefault = True
         End If
-
-        Dim currentParent = Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile)
-        Dim folderPath As String = Path.Combine(currentParent, tabName)
-        If Not Directory.Exists(folderPath) Then Exit Sub
-
-        Dim msg = $"Are you sure you want to delete the {tabName} folder?"
-
-        If Directory.GetFiles(folderPath, "*.sav", SearchOption.AllDirectories).Length > 0 Then
-
-            msg = $"The {tabName} folder contains save files! Do you want to move these to the Main folder before deleting?"
-            Dim response = MessageBox.Show(msg, "Delete Folder", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning)
-
-            If response = DialogResult.Cancel Then
-                Exit Sub
-            ElseIf response = DialogResult.Yes Then
-                MoveFiles(folderPath, currentParent)
-                filesMoved = True
-            End If
-
-        ElseIf MessageBox.Show(msg, "Delete Folder", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
-            Exit Sub
-        End If
-
-        TSWSFM.TabControl.TabPages.Remove(TSWSFM.TabControl.TabPages(tabIndex))
-        FileIO.FileSystem.DeleteDirectory(folderPath, FileIO.UIOption.OnlyErrorDialogs, FileIO.RecycleOption.SendToRecycleBin)
-        ShowTempMessage($"Folder {tabName} deleted {If(filesMoved, "and files moved to the Main folder", "and moved to the recycle bin")}")
-
-        tabName = TSWSFM.TabControl.SelectedTab.Text
-        ListSaveFiles(Path.Combine(currentParent, If(tabName = "Main", "", tabName)))
-
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Set order of tabs
+    ' Display a tooltip for text boxes with long text
     ' -----------------------------------------------------------------------------------------------------------
-    Public Sub ResetTabs(orderName As String)
-
-        My.Settings.lastTabOrder = orderName
-        My.Settings.Save()
-
-        GetAllTabs()
-
-        Dim currentTab = TSWSFM.TabControl.SelectedTab.Text
-        ListSaveFiles(Path.Combine(TSWSFM.CurrentFolder.Text, TSWSaveFolder, TSWCurrentProfile, If(currentTab = "Main", "", currentTab)))
-
+    Public Sub ShowTooltip(tt As ToolTip, sender As Object)
+        Dim tb = DirectCast(sender, TextBox)
+        tt.SetToolTip(tb, If(TextRenderer.MeasureText(tb.Text, tb.Font).Width > tb.Width, tb.Text, Nothing))
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Class for the listview sort function
+    Public Sub DrawTooltip(e As DrawToolTipEventArgs)
+        e.Graphics.FillRectangle(Brushes.LightYellow, e.Bounds) ' Background
+        ControlPaint.DrawBorder(e.Graphics, e.Bounds, Color.Black, ButtonBorderStyle.Solid) ' Border
+
+        Using f As New Font("Segoe UI", 9, FontStyle.Regular)
+            TextRenderer.DrawText(e.Graphics, e.ToolTipText, f, e.Bounds, Color.Black) ' Text
+        End Using
+    End Sub
+
     ' -----------------------------------------------------------------------------------------------------------
-    Public Class ListViewItemComparer
-        Implements IComparer
-
-        Private ReadOnly col As Integer
-        Private ReadOnly order As SortOrder
-        Private ReadOnly dateFormat As String = "dd/MM/yyyy HH:mm"
-        Private ReadOnly culture As CultureInfo = CultureInfo.InvariantCulture
-        ' ----------------------------------------------------
-        Public Sub New(column As Integer, sortOrder As SortOrder)
-            col = column
-            order = sortOrder
-        End Sub
-        ' ----------------------------------------------------
-        Public Function Compare(x As Object, y As Object) As Integer Implements IComparer.Compare
-            Dim itemX As ListViewItem = CType(x, ListViewItem)
-            Dim itemY As ListViewItem = CType(y, ListViewItem)
-
-            Dim valueX As String = itemX.SubItems(col).Text
-            Dim valueY As String = itemY.SubItems(col).Text
-
-            Dim result As Integer
-
-            If col = 2 Then
-                Dim dx, dy As DateTime
-
-                If DateTime.TryParseExact(valueX, dateFormat, culture, DateTimeStyles.None, dx) AndAlso
-                   DateTime.TryParseExact(valueY, dateFormat, culture, DateTimeStyles.None, dy) Then
-
-                    result = DateTime.Compare(dx, dy)
-                Else
-                    result = String.Compare(valueX, valueY)
-                End If
-            Else
-                result = String.Compare(valueX, valueY)
-            End If
-
-            If order = SortOrder.Descending Then result = -result
-            Return result
-        End Function
-    End Class
+    Public Sub SetTooltipSize(tt As ToolTip, e As PopupEventArgs)
+        Dim textSize = TextRenderer.MeasureText(tt.GetToolTip(e.AssociatedControl), New Font("Segoe UI", 9, FontStyle.Regular))
+        e.ToolTipSize = New Size(textSize.Width + 10, textSize.Height + 10)
+    End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
 End Module

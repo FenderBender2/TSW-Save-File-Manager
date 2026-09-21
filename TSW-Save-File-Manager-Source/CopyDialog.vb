@@ -1,14 +1,13 @@
-﻿' $Id: MoveDialog.vb 1494 2026-09-21 21:33:13Z Pete $
+﻿' $Id: CopyDialog.vb 1494 2026-09-21 21:33:13Z Pete $
 Imports System.ComponentModel
-Imports System.IO
 Imports System.Runtime.InteropServices
 
-Public Class MoveDialog
+Public Class CopyDialog
 
     Public ReadOnly Property ResultName As String
         Get
-            Dim folder = FolderList.Text.Trim()
-            Return If(folder <> "", Path.Combine("Profile" & GetCurrentProfile(CopyToProfile), If(folder <> "Main", folder, "")), "")
+            If CopyToVersion.Text = "" Or CopyToProfile.Text = "" Then Return Nothing
+            Return CopyToVersion.Text & "|" & CopyToProfile.Text
         End Get
     End Property
 
@@ -25,18 +24,18 @@ Public Class MoveDialog
     End Function
 
     ' -----------------------------------------------------------------------------------------------------------
-    Private Sub MoveDialog_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        DisplayMove(Me)
+    Private Sub CopyDialog_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        DisplayCopy(Me)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    Private Sub CopyToProfile_Selected(sender As Object, e As EventArgs) Handles CopyToProfile.SelectedValueChanged
-        PopulateFolderList(Me, Path.Combine(TSWCustomParent, "Profile" & GetCurrentProfile(sender)))
+    Private Sub CopyToversion_Selected(sender As Object, e As EventArgs) Handles CopyToVersion.SelectedValueChanged
+        PopulateProfileArray(GetSaveFolder(sender.text), copyProfileArray, CopyToProfile)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    Private Sub HeadingLabel_GotFocus(sender As Object, e As EventArgs) Handles HeadingLabel.GotFocus
-        HideCaret(sender.Handle)
+    Private Sub HeadingLabel_GotFocus(sender As Object, e As EventArgs) Handles FolderLabel.GotFocus
+        HideCaret(FolderLabel.Handle)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------

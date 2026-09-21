@@ -1,4 +1,5 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+﻿' $Id: MoveDialog.Designer.vb 1493 2026-09-21 09:08:45Z Pete $
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class MoveDialog
     Inherits System.Windows.Forms.Form
 
@@ -22,6 +23,7 @@ Partial Class MoveDialog
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(MoveDialog))
         PromptLabel = New Label()
         FolderList = New ComboBox()
         TextBox = New TextBox()
@@ -36,7 +38,7 @@ Partial Class MoveDialog
         ' 
         PromptLabel.AutoSize = True
         PromptLabel.ImageAlign = ContentAlignment.MiddleRight
-        PromptLabel.Location = New Point(32, 90)
+        PromptLabel.Location = New Point(26, 87)
         PromptLabel.Name = "PromptLabel"
         PromptLabel.Size = New Size(78, 15)
         PromptLabel.TabIndex = 12
@@ -46,7 +48,7 @@ Partial Class MoveDialog
         ' 
         FolderList.DropDownStyle = ComboBoxStyle.DropDownList
         FolderList.FormattingEnabled = True
-        FolderList.Location = New Point(114, 87)
+        FolderList.Location = New Point(108, 84)
         FolderList.Name = "FolderList"
         FolderList.Size = New Size(138, 23)
         FolderList.TabIndex = 2
@@ -54,14 +56,14 @@ Partial Class MoveDialog
         ' TextBox
         ' 
         TextBox.BorderStyle = BorderStyle.FixedSingle
-        TextBox.Location = New Point(116, 87)
+        TextBox.Location = New Point(110, 84)
         TextBox.Name = "TextBox"
         TextBox.Size = New Size(136, 23)
         TextBox.TabIndex = 9
         ' 
         ' CloseButton
         ' 
-        CloseButton.Location = New Point(303, 127)
+        CloseButton.Location = New Point(282, 127)
         CloseButton.Name = "CloseButton"
         CloseButton.Size = New Size(75, 23)
         CloseButton.TabIndex = 4
@@ -70,18 +72,19 @@ Partial Class MoveDialog
         ' 
         ' ActionButton
         ' 
-        ActionButton.Location = New Point(222, 127)
+        ActionButton.Location = New Point(201, 127)
         ActionButton.Name = "ActionButton"
         ActionButton.Size = New Size(75, 23)
         ActionButton.TabIndex = 3
-        ActionButton.Text = "Save"
+        ActionButton.Text = "Move"
         ActionButton.UseVisualStyleBackColor = True
         ' 
         ' CopyToProfile
         ' 
         CopyToProfile.DropDownStyle = ComboBoxStyle.DropDownList
+        CopyToProfile.ForeColor = SystemColors.WindowText
         CopyToProfile.FormattingEnabled = True
-        CopyToProfile.Location = New Point(114, 51)
+        CopyToProfile.Location = New Point(108, 50)
         CopyToProfile.Name = "CopyToProfile"
         CopyToProfile.Size = New Size(250, 23)
         CopyToProfile.TabIndex = 1
@@ -90,7 +93,7 @@ Partial Class MoveDialog
         ' 
         Label1.AutoSize = True
         Label1.ImageAlign = ContentAlignment.MiddleRight
-        Label1.Location = New Point(19, 54)
+        Label1.Location = New Point(13, 53)
         Label1.Name = "Label1"
         Label1.Size = New Size(91, 15)
         Label1.TabIndex = 14
@@ -99,7 +102,7 @@ Partial Class MoveDialog
         ' HeadingLabel
         ' 
         HeadingLabel.BorderStyle = BorderStyle.None
-        HeadingLabel.Location = New Point(64, 17)
+        HeadingLabel.Location = New Point(57, 16)
         HeadingLabel.Name = "HeadingLabel"
         HeadingLabel.ReadOnly = True
         HeadingLabel.Size = New Size(266, 16)
@@ -111,7 +114,7 @@ Partial Class MoveDialog
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(391, 162)
+        ClientSize = New Size(373, 162)
         Controls.Add(HeadingLabel)
         Controls.Add(Label1)
         Controls.Add(CopyToProfile)
@@ -121,11 +124,12 @@ Partial Class MoveDialog
         Controls.Add(CloseButton)
         Controls.Add(ActionButton)
         FormBorderStyle = FormBorderStyle.FixedSingle
+        Icon = CType(resources.GetObject("$this.Icon"), Icon)
         MaximizeBox = False
         MinimizeBox = False
         Name = "MoveDialog"
         StartPosition = FormStartPosition.CenterParent
-        Text = "MoveDialog"
+        Text = "Move File"
         ResumeLayout(False)
         PerformLayout()
     End Sub

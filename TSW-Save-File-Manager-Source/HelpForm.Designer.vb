@@ -1,4 +1,5 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+﻿' $Id: HelpForm.Designer.vb 1494 2026-09-21 21:33:13Z Pete $
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class HelpForm
     Inherits System.Windows.Forms.Form
 
@@ -22,6 +23,7 @@ Partial Class HelpForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(HelpForm))
         Label1 = New Label()
         CloseButton = New Button()
         HelpText = New RichTextBox()
@@ -134,6 +136,7 @@ Partial Class HelpForm
         Controls.Add(Label1)
         Controls.Add(MenuTab)
         FormBorderStyle = FormBorderStyle.FixedSingle
+        Icon = CType(resources.GetObject("$this.Icon"), Icon)
         MaximizeBox = False
         MinimizeBox = False
         Name = "HelpForm"
