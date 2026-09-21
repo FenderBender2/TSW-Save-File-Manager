@@ -40,7 +40,7 @@ Grab the latest version from the **Releases** page:
 ---
 
 ## 🖼 Screenshots
-<img width="519" height="618" alt="image" src="https://github.com/user-attachments/assets/7480510f-3eaf-4842-9d2f-858833ebb47f" />
+<img width="416" height="495" alt="image" src="https://github.com/user-attachments/assets/f7ac4481-34f0-49e2-bc94-0613c88ef723" />
 
 ---
 
