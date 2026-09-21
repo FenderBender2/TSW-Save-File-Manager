@@ -1,4 +1,4 @@
-# TSW-Save-File-Manager 1.2.0
+# TSW-Save-File-Manager 1.2.1
 
 A lightweight Windows utility for managing, backing up, restoring and organising save files for **Train Sim World** (TSW 3 to 6 so far).  
 Automatically detects installed TSW versions and provides fast switching between multiple save slots.
@@ -20,6 +20,7 @@ Automatically detects installed TSW versions and provides fast switching between
 - Train Sim World 4  
 - Train Sim World 5  
 - Train Sim World 6  
+- Train Sim World 7  
 - ...
 ---
 
@@ -39,7 +40,7 @@ Grab the latest version from the **Releases** page:
 ---
 
 ## 🖼 Screenshots
-<img width="416" height="525" alt="image" src="https://github.com/user-attachments/assets/bf78c087-ab60-4c9f-b5c2-45b352a69553" />
+<img width="519" height="618" alt="image" src="https://github.com/user-attachments/assets/7480510f-3eaf-4842-9d2f-858833ebb47f" />
 
 ---
 
