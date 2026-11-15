@@ -1,6 +1,5 @@
-﻿' $Id: TabModule.vb 1494 2026-09-21 21:33:13Z Pete $
+﻿' $Id: TabModule.vb 1519 2026-11-15 11:37:46Z Pete $
 Imports System.IO
-Imports System.Xml.Xsl
 
 Module TabModule
 
@@ -11,21 +10,23 @@ Module TabModule
 
         Dim lastOrder = My.Settings.lastTabOrder
 
-        fs.Visible = False
         fs.TabPages(0).Select()
 
         While fs.TabPages.Count > 1
             fs.TabPages.RemoveAt(1)
         End While
 
+        If NoSaveFile() Then Exit Sub
+
         For Each folder As String In Directory.GetDirectories(TSWCurrentProfilePath).OrderBy(Function(f) If(lastOrder = "Date", Directory.GetCreationTime(f), Path.GetFileName(f)))
             Dim tp As New TabPage(Path.GetFileName(folder)) With {.BackColor = Color.White}
             fs.TabPages.Add(tp)
         Next
 
-        fs.Visible = True
-        TSWSFM.MenuFileName.Checked = lastOrder <> "Date"
-        TSWSFM.MenuCreationDate.Checked = lastOrder = "Date"
+        With TSWSFM
+            .MenuFileName.Checked = lastOrder <> "Date"
+            .MenuCreationDate.Checked = lastOrder = "Date"
+        End With
 
     End Sub
 
@@ -102,6 +103,13 @@ Module TabModule
 
         fs.TabPages(tabindex).Text = cleanName
         Directory.Move(sourceFolder, targetFolder)
+
+        ' Update SaveLocation with new folder name if necessary
+        If TSWSFM.SaveLocation.Text = oldName Then
+            Dim savedText() = Split(FindSaveFile(TSWCurrentProfilePath, TSWSFM.SysTimeStamp.Text.Trim()), "|"c, 2)
+            TSWSFM.SaveLocation.Text = savedText(1)
+        End If
+
         ShowTempMessage($"Folder {oldName} renamed to {cleanName} successfully")
 
     End Sub
@@ -237,6 +245,11 @@ Module TabModule
             If r.Contains(location) Then
                 Dim clickedTab As TabPage = fs.TabPages(i)
                 Dim tabText As String = clickedTab.Text
+
+                With TSWSFM
+                    .MnuRenameTab.Enabled = (tabText <> "Main")
+                    .MnuDeleteTab.Enabled = (tabText <> "Main")
+                End With
 
                 ListSaveFiles(Path.Combine(TSWCurrentProfilePath, If(tabText = "Main", "", tabText)))
             End If

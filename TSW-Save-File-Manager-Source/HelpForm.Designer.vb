@@ -1,4 +1,4 @@
-﻿' $Id: HelpForm.Designer.vb 1494 2026-09-21 21:33:13Z Pete $
+﻿' $Id: HelpForm.Designer.vb 1512 2026-10-25 08:25:27Z Pete $
 <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class HelpForm
     Inherits System.Windows.Forms.Form
@@ -129,6 +129,7 @@ Partial Class HelpForm
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
+        CancelButton = CloseButton
         ClientSize = New Size(502, 499)
         Controls.Add(CopyRight)
         Controls.Add(HelpText)

@@ -1,12 +1,13 @@
-' $Id: TSWSaveFileManager.vb 1494 2026-09-21 21:33:13Z Pete $
+' $Id: TSWSaveFileManager.vb 1519 2026-11-15 11:37:46Z Pete $
 Imports System.IO
-Imports System.Runtime
 Imports System.Text.RegularExpressions
 Imports Microsoft.Win32
 
 Module TSWSaveFileManager
 
+    Private Const TSWREGISTRYKEY As String = "Software\Valve\Steam"
     Private Const TSWTITLE As String = "Train Sim World"
+    Private Const TSWKNOWNFILE As String = "dovetaillive.sav"
 
     Public Const TSWSAVEFILENAME As String = "TSWSaveGame_"
     Public Const TSWSAVEFOLDER As String = "Custom Saves"
@@ -14,11 +15,11 @@ Module TSWSaveFileManager
     Public TSWCustomParent As String
     Public TSWCurrentProfile As String
     Public TSWCurrentProfilePath As String
-    Public TSCappId As Integer = 0
-    Public TSWappId As Integer
+    Public TSCAppId As Integer = 0
+    Public TSWAppId As Integer
     Public TSWVersions As New List(Of (Name As String, Location As String, AppID As Integer))
-    Public TSWcurrentIsSaved As Boolean
-    Public TSWEnableFunctions As Boolean = False
+    Public TSWCurrentIsSaved As Boolean
+    Public TSWSaveNotFound As String = True
 
     Public isMyWrite As Boolean = False
     Public lastColumn As Integer
@@ -37,9 +38,9 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     ' Find the installation location of Steam applicatons
     ' -----------------------------------------------------------------------------------------------------------
-    Private Function GetSteamRoot() As String
+    Public Function GetSteamRoot() As String
 
-        Dim key = Registry.CurrentUser.OpenSubKey("Software\Valve\Steam")
+        Dim key = Registry.CurrentUser.OpenSubKey(TSWREGISTRYKEY)
 
         If key Is Nothing Then
             MessageBox.Show("Steam parent key not found in registry.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -53,7 +54,7 @@ Module TSWSaveFileManager
             Return Nothing
         End If
 
-        Return steamPath
+        Return steamPath.Replace("/", "\")
 
     End Function
 
@@ -62,9 +63,15 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     Public Function GetSaveFolder(TSWName As String) As String
 
-        Dim folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) & $"\My Games\{TSWName.Replace(" ", "")}\Saved\SaveGames"
-        Dim fld As String = Directory.GetDirectories(folder).Select(Function(f) Path.GetFileName(f)).FirstOrDefault(Function(n) Not n.Equals(TSWSAVEFOLDER, StringComparison.OrdinalIgnoreCase))
+        TSWSaveNotFound = True
 
+        Dim folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) & $"\My Games\{TSWName.Replace(" ", "")}\Saved"
+        If Not Directory.Exists(folder) Then Return ""
+
+        ' Search for a known file in the save folder structure and return the parent path if it exists
+        Dim fld = Directory.GetFiles(folder, TSWKNOWNFILE, SearchOption.AllDirectories).Select(Function(f) Path.GetDirectoryName(f)).FirstOrDefault()
+
+        TSWSaveNotFound = fld = ""
         Return Path.Combine(folder, If(fld = "", "", fld))
 
     End Function
@@ -79,10 +86,9 @@ Module TSWSaveFileManager
         Dim folder = GetSaveFolder(vs.Text)
 
         LoadTSWIcon(ii, TSWVersions(vs.SelectedIndex))
+        TSWAppId = selectedItem.AppID
 
-        TSWappId = selectedItem.AppID
-
-        If Not Directory.Exists(folder) Then
+        If folder Is Nothing Or Not Directory.Exists(folder) Then
             With TSWSFM
                 .ProfileSelect.Items.Clear()
                 .ProfileSelect.Text = ""
@@ -95,7 +101,9 @@ Module TSWSaveFileManager
                 .CustomFileList.Items.Clear()
             End With
 
-            MessageBox.Show($"Unable to find save game folder for {vs.SelectedItem}. You may need to run the game first and save a game.",
+            GetAllTabs(TSWSFM.FolderSelect)
+
+            MessageBox.Show($"Unable to find save game folder for {vs.SelectedItem}. You may need to run the game first then save a game.",
                             "Version Select", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Exit Sub
         End If
@@ -118,7 +126,7 @@ Module TSWSaveFileManager
 
         Dim dirMatch = Regex.Match(lineText, """installdir""\s+""([^""]+)""")
 
-            If dirMatch.Success Then
+        If dirMatch.Success Then
             Dim appIdMatch = Regex.Match(lineText, """appid""\s*""(\d+)""") ' TSW app ID
             Dim appId As Integer = Integer.Parse(appIdMatch.Groups(1).Value)
             Dim installDir = dirMatch.Groups(1).Value
@@ -127,7 +135,7 @@ Module TSWSaveFileManager
             If isTWS Then
                 TSWVersions.Add((Path.GetFileName(fullPath), fullPath, appId))
             ElseIf File.Exists("TSCEnabledb-HDfhymdS447pwdbvH.flag") Then
-                TSCappId = appId
+                TSCAppId = appId
             End If
         End If
 
@@ -147,8 +155,46 @@ Module TSWSaveFileManager
         TSWCurrentProfilePath = Path.Combine(TSWCustomParent, TSWCurrentProfile)
         If Not Directory.Exists(TSWCurrentProfilePath) Then Directory.CreateDirectory(TSWCurrentProfilePath)
 
+        fs.Visible = False
         GetAllTabs(fs)
-        ListSaveFiles(TSWCurrentProfilePath)
+
+        If TSWCurrentProfilePath <> TSWSAVEFOLDER AndAlso TSWSFM.CurrentFolder.Text <> "" Then
+            ' Populate the TSW save file details
+            With TSWSFM
+                .NewFileName.Text = ""
+
+                Dim savedText() = Split(FindSaveFile(TSWCurrentProfilePath, .SysTimeStamp.Text.Trim()), "|"c, 2)
+
+                ' Set attributes of TSW save file location
+                With .SavedAsFileName
+                    .Text = savedText(0)
+                    .Font = New Font(.Font, If(savedText(0) = "Not Saved", FontStyle.Bold, FontStyle.Regular))
+                    .BackColor = If(savedText(0) = "Not Saved", ColorTranslator.FromHtml("#FFEEEE"), SystemColors.Control)
+                End With
+
+                .SaveLocation.Text = savedText(1)
+            End With
+        End If
+
+        With TSWSFM
+            ' Find the location of the current save file and show that location as a default
+            Dim saveLocation As String = .SaveLocation.Text
+
+            If Len(saveLocation) > 0 Then
+                For Each tp As TabPage In .FolderSelect.TabPages
+                    If tp.Text = saveLocation Then
+                        .FolderSelect.SelectedTab = tp
+                        Exit For
+                    End If
+                Next
+
+                ListSaveFiles(Path.Combine(TSWCurrentProfilePath, If(saveLocation = "Main", "", saveLocation)))
+            Else
+                ListSaveFiles(Path.Combine(TSWCurrentProfilePath))
+            End If
+        End With
+
+        fs.Visible = True
 
         With My.Settings
             .lastProfile = GetCurrentProfile(TSWSFM.ProfileSelect, 1)
@@ -160,14 +206,14 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     ' Find if the current save file is saved anywhere
     ' -----------------------------------------------------------------------------------------------------------
-    Private Function FindSaveFile(parentFolder As String, targetTime As String) As String
+    Public Function FindSaveFile(parentFolder As String, targetTime As String) As String
 
-        TSWcurrentIsSaved = False
+        TSWCurrentIsSaved = False
 
         ' Loop through all files in this folder
         For Each fileName As String In Directory.GetFiles(parentFolder, "*.sav")
             If File.GetLastWriteTime(fileName).ToString("yyyyMMddhhmmss") = targetTime Then
-                TSWcurrentIsSaved = True
+                TSWCurrentIsSaved = True
                 Dim folderName = Path.GetFileName(parentFolder)
 
                 Return Path.GetFileNameWithoutExtension(fileName) & "|" & If(folderName = TSWCurrentProfile, "Main", folderName)
@@ -179,7 +225,7 @@ Module TSWSaveFileManager
             Dim result As String = FindSaveFile(subFolder, targetTime)
 
             If result <> "Not Saved|" Then
-                TSWcurrentIsSaved = True
+                TSWCurrentIsSaved = True
                 Return result
             End If
         Next
@@ -316,15 +362,17 @@ Module TSWSaveFileManager
                 .Items.Add(v.Name)
             Next
 
-            If .Items.Count = 1 Then ' This will trigger the selection event on the Version select dropdown
-                .SelectedIndex = 0
+            If .Items.Count = 1 Then
+                .SelectedIndex = 0 ' This will trigger the selection event on the Version select dropdown
             ElseIf My.Settings.lastVersion <> "" Then
                 Dim verIdx = .FindStringExact(My.Settings.lastVersion)
                 .SelectedIndex = If(verIdx >= 0, verIdx, 0)
             End If
         End With
 
-        TSWEnableFunctions = True
+#If IDSUPPORT Then
+        GetIDs()
+#End If
 
     End Sub
 
@@ -333,15 +381,10 @@ Module TSWSaveFileManager
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub ListSaveFiles(folderpath As String)
 
-        If folderpath = TSWSAVEFOLDER Or TSWSFM.CurrentFolder.Text = "" Then Exit Sub
-
         Dim files = Directory.GetFiles(folderpath)
         Dim saveTimeStamp = TSWSFM.SysTimeStamp.Text.Trim()
 
-        With TSWSFM
-            .CustomFileList.Items.Clear()
-            .NewFileName.Text = ""
-        End With
+        TSWSFM.CustomFileList.Items.Clear()
 
         For Each f In files
             If Path.GetExtension(f) <> ".sav" Then Continue For
@@ -363,16 +406,7 @@ Module TSWSaveFileManager
         Next
 
         With TSWSFM
-            Dim savedText() = Split(FindSaveFile(TSWCurrentProfilePath, .SysTimeStamp.Text.Trim()), "|"c, 2)
 
-            ' Set attributes of TSW save file location
-            With .SavedAsFileName
-                .Text = savedText(0)
-                .Font = New Font(.Font, If(savedText(0) = "Not Saved", FontStyle.Bold, FontStyle.Regular))
-                .BackColor = If(savedText(0) = "Not Saved", ColorTranslator.FromHtml("#FFEEEE"), SystemColors.Control)
-            End With
-
-            .SaveLocation.Text = savedText(1)
             suppressColumnEvents = True
 
             ' Sort the custom list by the last used order
@@ -387,7 +421,8 @@ Module TSWSaveFileManager
         End With
 
         Dim count = Directory.EnumerateFiles(TSWCurrentProfilePath, "*.sav", SearchOption.AllDirectories).Count()
-        TSWSFM.FileCount.Text = $"Total File Count:  {count}"
+        Dim localCount = Directory.EnumerateFiles(folderpath, "*.sav", SearchOption.TopDirectoryOnly).Count()
+        TSWSFM.FileCount.Text = $"Total File Count:  {localCount} of {count}"
 
     End Sub
 
@@ -450,7 +485,7 @@ Module TSWSaveFileManager
             End If
         Next
 
-        If pl.Items.Count = 1 Then pl.SelectedIndex = 0
+        If pl.Items.Count = 1 Then pl.SelectedIndex = 0 ' This will trigger the selection event on the combobox
 
     End Sub
 
@@ -472,7 +507,10 @@ Module TSWSaveFileManager
                 .FileCount.Text = ""
                 .CustomFileList.Items.Clear()
 
+                GetAllTabs(TSWSFM.FolderSelect)
+
                 MessageBox.Show("No save game files found for this version.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                TSWSaveNotFound = True
                 Exit Sub
             End If
         End With
@@ -532,77 +570,6 @@ Module TSWSaveFileManager
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
-    ' Show status message until MessageTimer times out
-    ' -----------------------------------------------------------------------------------------------------------
-
-    Public CurrentColour As Color
-    Public StartColour As Color = SystemColors.HotTrack ' Light blue
-    Public EndColour As Color = SystemColors.Control
-    Public FadeStep As Integer = 15
-
-    ' -----------------------------------------------------------------------------------------------------------
-    Public Sub ShowTempMessage(msg As String)
-
-        With TSWSFM
-            Dim flags As TextFormatFlags = TextFormatFlags.NoPadding Or TextFormatFlags.NoClipping Or TextFormatFlags.TextBoxControl
-            Dim textSize As Size = TextRenderer.MeasureText(msg, .StatusMessage.Font, New Size(Integer.MaxValue, Integer.MaxValue), flags)
-            Dim usableWidth As Integer = .StatusMessage.ClientSize.Width
-            Dim wraps As Boolean = (textSize.Width > usableWidth - 2)
-
-            ' Add padding only if the text fits on one line
-            Dim rtf As String = $"{{\rtf1\ansi{{\pard\sb{If(wraps, 0, 100)} {msg}\par}}}}"
-
-            .StatusMessage.Rtf = rtf
-            .StatusMessage.Visible = True
-            CurrentColour = StartColour
-            .StatusMessage.ForeColor = CurrentColour
-
-            .FadeTimer.Stop()
-            .MessageTimer.Stop()
-            .MessageTimer.Start()
-        End With
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
-    ' Calculate colour fade for each channel R G B
-    ' -----------------------------------------------------------------------------------------------------------
-    Private Function MoveChannel(current As Integer, target As Integer) As Integer
-
-        Dim stepSize As Integer = Math.Max(1, Math.Abs(current - target) \ 3)
-
-        If current < target Then
-            Return Math.Min(target, current + stepSize)
-        ElseIf current > target Then
-            Return Math.Max(target, current - stepSize)
-        Else
-            Return current
-        End If
-
-    End Function
-
-    ' -----------------------------------------------------------------------------------------------------------
-    ' Fade colour on each tick of the fade timer
-    ' -----------------------------------------------------------------------------------------------------------
-    Public Sub FadeColours(tm As Timer)
-
-        Dim r = MoveChannel(CurrentColour.R, EndColour.R)
-        Dim g = MoveChannel(CurrentColour.G, EndColour.G)
-        Dim b = MoveChannel(CurrentColour.B, EndColour.B)
-
-        CurrentColour = Color.FromArgb(r, g, b)
-        TSWSFM.StatusMessage.ForeColor = CurrentColour
-
-        ' Stop when close enough to the target colour
-        If r = EndColour.R AndAlso g = EndColour.G AndAlso b = EndColour.B Then
-            tm.Stop()
-            TSWSFM.StatusMessage.Visible = False
-            TSWSFM.StatusMessage.ForeColor = StartColour
-        End If
-
-    End Sub
-
-    ' -----------------------------------------------------------------------------------------------------------
     ' Get the selected TSW icon
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub LoadTSWIcon(ii As PictureBox, selectedVersion As (Name As String, Location As String, AppID As Integer))
@@ -636,7 +603,6 @@ Module TSWSaveFileManager
             newDlg.ObjectName = sourceName
         ElseIf TypeOf dlg Is CopyDialog Then
             newDlg.ObjectName = sourceName
-            '            If Not PopulateVersions(Nothing) Then Return Nothing
         End If
 
         If dlg.ShowDialog(TSWSFM) = DialogResult.OK Then Return newDlg.ResultName
@@ -727,6 +693,13 @@ Module TSWSaveFileManager
         ShowTempMessage($"Profile {currName} renamed to {newName}")
 
     End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Check if the TSW save file exists
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Function NoSaveFile() As Boolean
+        Return Len(TSWSFM.SaveFileName.Text) = 0
+    End Function
 
     ' -----------------------------------------------------------------------------------------------------------
     ' Custom draw the listview  headers

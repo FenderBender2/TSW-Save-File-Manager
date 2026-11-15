@@ -1,4 +1,4 @@
-﻿' $Id: CopyDialog.Designer.vb 1493 2026-09-21 09:08:45Z Pete $
+﻿' $Id: CopyDialog.Designer.vb 1512 2026-10-25 08:25:27Z Pete $
 <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class CopyDialog
     Inherits System.Windows.Forms.Form
@@ -103,8 +103,10 @@ Partial Class CopyDialog
         ' 
         ' CopyDialog
         ' 
+        AcceptButton = ActionButton
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
+        CancelButton = CloseButton
         ClientSize = New Size(384, 157)
         Controls.Add(FolderLabel)
         Controls.Add(Label1)

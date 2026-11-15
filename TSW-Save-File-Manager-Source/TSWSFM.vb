@@ -1,10 +1,7 @@
-﻿' $Id: TSWSFM.vb 1494 2026-09-21 21:33:13Z Pete $
+﻿' $Id: TSWSFM.vb 1518 2026-11-12 17:35:11Z Pete $
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Threading
-'Imports System.Windows.Forms.VisualStyles.VisualStyleElement
-'Imports System.Windows.Forms.VisualStyles.VisualStyleElement
-'Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 
 Public Class TSWSFM
 
@@ -133,14 +130,29 @@ Public Class TSWSFM
         SetupWatcher()
     End Sub
 
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Set AcceptButton when VersionSelect or ProfileSelect is entered, or a tab is clicked
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub ProfileSelect_Enter(sender As Object, e As EventArgs) Handles VersionSelect.Enter, ProfileSelect.Enter, FolderSelect.MouseDown
+        Me.AcceptButton = RunButton
+    End Sub
+
     ' ===========================================================================================================
     ' All buttons
     ' -----------------------------------------------------------------------------------------------------------
     ' Save button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub SaveButton_Click(sender As Object, e As EventArgs) Handles SaveButton.Click
+        If NoSaveFile Then Exit Sub
         SaveFile(FolderSelect, NewFileName.Text, CurrentFolder.Text, SaveFileName.Text)
         NewFileName.Text = ""
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Handle the enter key for the newFileName
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub NewFileName_Enter(sender As Object, e As EventArgs) Handles NewFileName.Enter
+        Me.AcceptButton = SaveButton
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
@@ -154,13 +166,14 @@ Public Class TSWSFM
     ' Run TSC button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub RunTSC_Click(sender As Object, e As EventArgs) Handles RunTSC.Click
-        RunGame(True)
+        RunGameTSC()
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     ' Restore button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub RestoreButton_Click(sender As Object, e As EventArgs) Handles RestoreButton.Click
+        If NoSaveFile Then Exit Sub
         RestoreFile(CustomFileList, FolderSelect, SaveFileName.Text, CurrentFolder.Text)
     End Sub
 
@@ -168,6 +181,7 @@ Public Class TSWSFM
     ' Delete button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub DeleteButton_Click(sender As Object, e As EventArgs) Handles DeleteButton.Click
+        If NoSaveFile() Then Exit Sub
         DeleteFile(CustomFileList)
     End Sub
 
@@ -182,6 +196,7 @@ Public Class TSWSFM
     ' Rename button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub RenameButton_Click(sender As Object, e As EventArgs) Handles RenameButton.Click
+        If NoSaveFile Then Exit Sub
         RenameFile(CustomFileList, NewFileName.Text)
     End Sub
 
@@ -189,6 +204,7 @@ Public Class TSWSFM
     ' Move file button
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MoveButton_Click(sender As Object, e As EventArgs) Handles MoveButton.Click
+        If NoSaveFile Then Exit Sub
         FilesToMove(CustomFileList, FolderSelect)
     End Sub
 
@@ -198,6 +214,7 @@ Public Class TSWSFM
     ' Catch listview double-click event
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub CustomFileList_DoubleClick(sender As Object, e As EventArgs) Handles CustomFileList.DoubleClick
+        If NoSaveFile Then Exit Sub
         RestoreButton_Click(sender, e)
     End Sub
 
@@ -239,7 +256,15 @@ Public Class TSWSFM
     ' 'Fix' the column widths
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub CustomFileList_ColumnWidthChanged(sender As Object, e As ColumnWidthChangedEventArgs) Handles CustomFileList.ColumnWidthChanged
-        If Not suppressColumnEvents Then sender.Columns(e.ColumnIndex).Width = customFixedWidths(e.ColumnIndex)
+        If suppressColumnEvents Then Exit Sub
+        sender.Columns(e.ColumnIndex).Width = customFixedWidths(e.ColumnIndex)
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    ' Handle the enter key for the listview
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Sub CustomFileList_Enter(sender As Object, e As EventArgs) Handles CustomFileList.Enter
+        Me.AcceptButton = RestoreButton
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
@@ -272,11 +297,12 @@ Public Class TSWSFM
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub FolderSelect_DragDrop(sender As Object, e As DragEventArgs) Handles FolderSelect.DragDrop
-        Dim draggedItem As ListViewItem = CType(e.Data.GetData(GetType(ListViewItem)), ListViewItem)
-
         ' Find which tab was dropped onto
         Dim index As Integer = GetTabIndexAtPoint(sender, FolderSelect.PointToClient(New Point(e.X, e.Y)))
-        If index >= 0 Then TabDragDrop(sender, index, draggedItem)
+        If index < 0 Then Exit Sub
+
+        Dim draggedItem As ListViewItem = CType(e.Data.GetData(GetType(ListViewItem)), ListViewItem)
+        TabDragDrop(sender, index, draggedItem)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
@@ -310,27 +336,32 @@ Public Class TSWSFM
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MnuNewTab_Click(sender As Object, e As EventArgs) Handles MnuNewTab.Click
-        If TSWEnableFunctions Then CreateTab(FolderSelect)
+        If NoSaveFile Then Exit Sub
+        CreateTab(FolderSelect)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MnuRenameTab_Click(sender As Object, e As EventArgs) Handles MnuRenameTab.Click
-        If TSWEnableFunctions Then RenameTabs(FolderSelect)
+        If NoSaveFile Then Exit Sub
+        RenameTabs(FolderSelect)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MnuCopyTab_Click(sender As Object, e As EventArgs) Handles MnuCopyTab.Click
-        If TSWEnableFunctions Then CopyTabs(FolderSelect)
+        If NoSaveFile Then Exit Sub
+        CopyTabs(FolderSelect)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MnuDeleteTab_Click(sender As Object, e As EventArgs) Handles MnuDeleteTab.Click
-        If TSWEnableFunctions Then DeleteTabs(FolderSelect)
+        If NoSaveFile Then Exit Sub
+        DeleteTabs(FolderSelect)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MnuRenameProfile_Click(sender As Object, e As EventArgs) Handles MnuRenameProfile.Click
-        If TSWEnableFunctions Then RenameProfile(ProfileSelect)
+        If NoSaveFile Then Exit Sub
+        RenameProfile(ProfileSelect)
     End Sub
 
     ' ===========================================================================================================
@@ -339,19 +370,22 @@ Public Class TSWSFM
     ' Catch tab click event
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub FolderSelect_MouseDown(sender As Object, e As MouseEventArgs) Handles FolderSelect.MouseDown
-        If Not e.Button = MouseButtons.Right AndAlso TSWEnableFunctions Then TabSelect(sender, e.Location)
+        If NoSaveFile Then Exit Sub
+        If Not e.Button = MouseButtons.Right Then TabSelect(sender, e.Location)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     ' Set order of tabs
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MenuCreationDate_Click(sender As Object, e As EventArgs) Handles MenuCreationDate.Click
-        If TSWEnableFunctions Then ResetTabs(FolderSelect, "Date")
+        If NoSaveFile Then Exit Sub
+        ResetTabs(FolderSelect, "Date")
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MenuFileName_Click(sender As Object, e As EventArgs) Handles MenuFileName.Click
-        If TSWEnableFunctions Then ResetTabs(FolderSelect, "File")
+        If NoSaveFile Then Exit Sub
+        ResetTabs(FolderSelect, "File")
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
@@ -390,26 +424,31 @@ Public Class TSWSFM
     ' Right-click context menus for tabs & files
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub FolderSelect_MouseUp(sender As Object, e As MouseEventArgs) Handles FolderSelect.MouseUp
-        If e.Button = MouseButtons.Right AndAlso TSWEnableFunctions Then TabRightClick(sender, e.Location)
+        If NoSaveFile Then Exit Sub
+        If e.Button = MouseButtons.Right Then TabRightClick(sender, e.Location)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub RenameTabMenuItem_Click(sender As Object, e As EventArgs) Handles RenameTabMenuItem.Click
+        If NoSaveFile Then Exit Sub
         If rightClickedTabIndex > 0 AndAlso rightClickedTabIndex < FolderSelect.TabPages.Count Then RenameTabs(FolderSelect)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub DeleteTabMenuItem_Click(sender As Object, e As EventArgs) Handles DeleteTabMenuItem.Click
+        If NoSaveFile Then Exit Sub
         If rightClickedTabIndex > 0 AndAlso rightClickedTabIndex < FolderSelect.TabPages.Count Then DeleteTabs(FolderSelect)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub DeleteFileMenuItem_Click(sender As Object, e As EventArgs) Handles DeleteFileMenuItem.Click
+        If NoSaveFile Then Exit Sub
         DeleteFile(CustomFileList)
     End Sub
 
     ' -----------------------------------------------------------------------------------------------------------
     Private Sub MoveFileMenuItem_Click(sender As Object, e As EventArgs) Handles MoveFileMenuItem.Click
+        If NoSaveFile Then Exit Sub
         FilesToMove(CustomFileList, FolderSelect)
     End Sub
 

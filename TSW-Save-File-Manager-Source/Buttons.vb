@@ -1,23 +1,61 @@
-﻿' $Id: Buttons.vb 1494 2026-09-21 21:33:13Z Pete $
+﻿' $Id: Buttons.vb 1516 2026-11-11 15:56:26Z Pete $
 Imports System.IO
+Imports System.Threading
 
 Module Buttons
 
     ' -----------------------------------------------------------------------------------------------------------
     ' Run the selected version of TSW or TSC
     ' -----------------------------------------------------------------------------------------------------------
-    Public Sub RunGame(Optional runTSC As Boolean = False)
+    Public Sub RunGame()
 
-        Dim appID = If(runTSC, TSCappId, TSWappId)
-        If Not TSWEnableFunctions AndAlso appID.ToString() = "" Then Exit Sub
+        If TSWAppId.ToString() = "" Then Exit Sub
 
         Try
-            Dim psi As New ProcessStartInfo With {.FileName = "steam://rungameid/" & appID, .UseShellExecute = True}  ' REQUIRED for URI protocols
+            Dim psi As New ProcessStartInfo With {.FileName = "steam://rungameid/" & TSWappId, .UseShellExecute = True}  ' REQUIRED for URI protocols
             Process.Start(psi)
 
         Catch ex As Exception
             MessageBox.Show($"Launch failed: {ex.Message}", "Start Game", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+
+        If TSWSaveNotFound Then
+            Application.Exit()
+            Return
+        End If
+
+    End Sub
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Public Sub RunGameTSC()
+
+        Dim sRoot = Path.Combine(GetSteamRoot())
+
+        If Process.GetProcessesByName("steam").Length = 0 Then
+
+            Process.Start(Path.Combine(sRoot, "Steam.exe"))
+
+            ' Give Steam time to initialise
+            For i As Integer = 1 To 30
+                Thread.Sleep(1000)
+
+                If Process.GetProcessesByName("steam").Length > 0 Then
+                    Thread.Sleep(10000)
+                    Exit For
+                End If
+            Next
+        End If
+
+        ' We specifically want the DX12 version of the game
+        Dim exe = Path.Combine(Path.Combine(sRoot, "steamapps\common\RailWorks\RailWorksDX12_64.exe"))
+
+        If File.Exists(exe) Then
+            Dim psi As New ProcessStartInfo(exe)
+            psi.WorkingDirectory = Path.GetDirectoryName(exe)
+            Process.Start(psi)
+        Else
+            MessageBox.Show("TSC DX12 version not found.")
+        End If
 
     End Sub
 
@@ -26,7 +64,10 @@ Module Buttons
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub SaveFile(tc As TabControl, newName As String, folder As String, TSWFile As String)
 
-        If newName = "" Or Not TSWEnableFunctions Then Exit Sub
+        If newName = "" Then
+            MessageBox.Show("Please enter a meaningful file name to save.", "Save File", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
 
         Dim tabtext = tc.SelectedTab.Text
         Dim cleanStr = Path.GetFileNameWithoutExtension(String.Concat(newName.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c))))
@@ -125,7 +166,10 @@ Module Buttons
     ' -----------------------------------------------------------------------------------------------------------
     Public Sub RenameFile(cf As ListView, newFileName As String)
 
-        If newFileName = "" Or cf.SelectedItems.Count = 0 Or Not TSWEnableFunctions Then Exit Sub
+        If newFileName = "" Or cf.SelectedItems.Count = 0 Then
+            MessageBox.Show("Please select a file from the custom list to rename.", "Rename File", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
 
         Dim fileName = cf.SelectedItems(0).SubItems(1).Text
         Dim newName = Path.GetFileNameWithoutExtension(String.Concat(newFileName.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c))))
@@ -134,7 +178,10 @@ Module Buttons
         Dim sourceFile As String = Path.Combine(folderPath, fileName & If(Not Path.HasExtension(fileName), ".sav", ""))
         Dim targetFile As String = Path.Combine(folderPath, newName & If(Not Path.HasExtension(newName), ".sav", ""))
 
-        If targetFile = sourceFile Then Exit Sub
+        If targetFile = sourceFile Then
+            MessageBox.Show("Please enter a different name to the one selected.", "Rename File", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
 
         If File.Exists(targetFile) Then
             If MessageBox.Show($"File {newName} already exists in this folder. Do you want to create a new version of the file?",

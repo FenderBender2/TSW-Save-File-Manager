@@ -1,4 +1,4 @@
-﻿' $Id: TSWSFM.Designer.vb 1494 2026-09-21 21:33:13Z Pete $
+﻿' $Id: TSWSFM.Designer.vb 1513 2026-11-10 14:57:59Z Pete $
 <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class TSWSFM
     Inherits System.Windows.Forms.Form
@@ -54,6 +54,7 @@ Partial Class TSWSFM
         imgHeaderArrows = New ImageList(components)
         FolderSelect = New TabControl()
         TabPage1 = New TabPage()
+        CountLabel = New Label()
         TabMenu = New ContextMenuStrip(components)
         RenameTabMenuItem = New ToolStripMenuItem()
         DeleteTabMenuItem = New ToolStripMenuItem()
@@ -98,7 +99,7 @@ Partial Class TSWSFM
         ' 
         CurrentFolder.BorderStyle = BorderStyle.FixedSingle
         CurrentFolder.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        CurrentFolder.Location = New Point(295, 20)
+        CurrentFolder.Location = New Point(321, 20)
         CurrentFolder.Name = "CurrentFolder"
         CurrentFolder.ReadOnly = True
         CurrentFolder.Size = New Size(26, 23)
@@ -265,7 +266,7 @@ Partial Class TSWSFM
         ' 
         SysTimeStamp.BorderStyle = BorderStyle.FixedSingle
         SysTimeStamp.Font = New Font("Segoe UI", 9F)
-        SysTimeStamp.Location = New Point(272, 20)
+        SysTimeStamp.Location = New Point(300, 20)
         SysTimeStamp.Name = "SysTimeStamp"
         SysTimeStamp.ReadOnly = True
         SysTimeStamp.Size = New Size(20, 23)
@@ -415,6 +416,15 @@ Partial Class TSWSFM
         TabPage1.Text = "Main"
         TabPage1.UseVisualStyleBackColor = True
         ' 
+        ' CountLabel
+        ' 
+        CountLabel.AutoSize = True
+        CountLabel.Font = New Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        CountLabel.Location = New Point(280, 24)
+        CountLabel.Name = "CountLabel"
+        CountLabel.Size = New Size(0, 15)
+        CountLabel.TabIndex = 17
+        ' 
         ' TabMenu
         ' 
         TabMenu.Items.AddRange(New ToolStripItem() {RenameTabMenuItem, DeleteTabMenuItem})
@@ -452,37 +462,39 @@ Partial Class TSWSFM
         ' MnuNewTab
         ' 
         MnuNewTab.Name = "MnuNewTab"
-        MnuNewTab.Size = New Size(161, 22)
+        MnuNewTab.Size = New Size(180, 22)
         MnuNewTab.Text = "&New Folder"
         ' 
         ' MnuRenameTab
         ' 
+        MnuRenameTab.Enabled = False
         MnuRenameTab.Name = "MnuRenameTab"
-        MnuRenameTab.Size = New Size(161, 22)
+        MnuRenameTab.Size = New Size(180, 22)
         MnuRenameTab.Text = "&Rename Folder"
         ' 
         ' MnuCopyTab
         ' 
         MnuCopyTab.Name = "MnuCopyTab"
-        MnuCopyTab.Size = New Size(161, 22)
+        MnuCopyTab.Size = New Size(180, 22)
         MnuCopyTab.Text = "&Copy Folder"
         ' 
         ' MnuDeleteTab
         ' 
+        MnuDeleteTab.Enabled = False
         MnuDeleteTab.Name = "MnuDeleteTab"
-        MnuDeleteTab.Size = New Size(161, 22)
+        MnuDeleteTab.Size = New Size(180, 22)
         MnuDeleteTab.Text = "&Delete Folder"
         ' 
         ' ToolStripSeparator1
         ' 
         ToolStripSeparator1.Name = "ToolStripSeparator1"
-        ToolStripSeparator1.Size = New Size(158, 6)
+        ToolStripSeparator1.Size = New Size(177, 6)
         ' 
         ' MenuOrderTabs
         ' 
         MenuOrderTabs.DropDownItems.AddRange(New ToolStripItem() {MenuCreationDate, MenuFileName})
         MenuOrderTabs.Name = "MenuOrderTabs"
-        MenuOrderTabs.Size = New Size(161, 22)
+        MenuOrderTabs.Size = New Size(180, 22)
         MenuOrderTabs.Text = "&Order Folders By"
         ' 
         ' MenuCreationDate
@@ -507,7 +519,7 @@ Partial Class TSWSFM
         ' MnuRenameProfile
         ' 
         MnuRenameProfile.Name = "MnuRenameProfile"
-        MnuRenameProfile.Size = New Size(154, 22)
+        MnuRenameProfile.Size = New Size(180, 22)
         MnuRenameProfile.Text = "&Rename Profile"
         ' 
         ' MenuAbout
@@ -520,7 +532,7 @@ Partial Class TSWSFM
         ' MnuHelp
         ' 
         MnuHelp.Name = "MnuHelp"
-        MnuHelp.Size = New Size(99, 22)
+        MnuHelp.Size = New Size(180, 22)
         MnuHelp.Text = "&Help"
         ' 
         ' MessageTimer
@@ -538,6 +550,7 @@ Partial Class TSWSFM
         ' 
         ' GroupBox3
         ' 
+        GroupBox3.Controls.Add(CountLabel)
         GroupBox3.Controls.Add(RunTSC)
         GroupBox3.Controls.Add(Label6)
         GroupBox3.Controls.Add(ProfileSelect)
@@ -626,8 +639,10 @@ Partial Class TSWSFM
         ' 
         ' TSWSFM
         ' 
+        AcceptButton = RunButton
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
+        CancelButton = CloseButton
         ClientSize = New Size(515, 585)
         Controls.Add(GroupBox4)
         Controls.Add(GroupBox3)
@@ -717,5 +732,6 @@ Partial Class TSWSFM
     Friend WithEvents Label1 As Label
     Friend WithEvents LongTextDisplay As ToolTip
     Friend WithEvents MnuCopyTab As ToolStripMenuItem
+    Friend WithEvents CountLabel As Label
 
 End Class

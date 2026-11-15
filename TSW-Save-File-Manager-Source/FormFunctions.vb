@@ -1,6 +1,5 @@
-﻿' $Id: FormFunctions.vb 1494 2026-09-21 21:33:13Z Pete $
+﻿' $Id: FormFunctions.vb 1497 2026-09-23 19:52:15Z Pete $
 Imports System.IO
-Imports System.Runtime.Intrinsics
 
 Module FormFunctions
 
@@ -60,7 +59,6 @@ Module FormFunctions
             .CopyToVersion.Items.Clear()
         End With
 
-        ' If Not PopulateVersions(dlg.CopyToVersion) Then Exit Sub
         PopulateVersions(dlg.CopyToVersion)
 
     End Sub
@@ -104,15 +102,12 @@ Module FormFunctions
 
         Dim selectedName = TSWSFM.VersionSelect.SelectedItem.ToString
         Dim selectedAppID As Integer = Integer.Parse(TSWVersions.First(Function(v) v.Name = selectedName).AppID)
-        '        Dim found As Boolean = False
 
         For Each v In TSWVersions
             If v.AppID > selectedAppID Then vl.Items.Add(v.Name)
         Next
 
-        If vl.Items.Count = 1 Then vl.SelectedIndex = 0
-
-        '        Return True
+        If vl.Items.Count = 1 Then vl.SelectedIndex = 0 ' This will trigger the selection event on the combobox
 
     End Sub
 

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <SVNRevision>$Id: TSW Save File Manager.vbproj 1492 2026-09-18 12:53:30Z Pete $</SVNRevision>
+    <SVNRevision>$Id: TSW Save File Manager.vbproj 1516 2026-11-11 15:56:26Z Pete $</SVNRevision>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>TSW_Save_Game_Manager</RootNamespace>
@@ -9,9 +9,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
     <ApplicationIcon>Assets\TSWSaveManager2.ico</ApplicationIcon>
-    <Version>1.2.1</Version>
-    <FileVersion>1.2.1.0</FileVersion>
-    <InformationalVersion>1.2.1</InformationalVersion>
+    <Version>1.2.2</Version>
+    <FileVersion>1.2.2.0</FileVersion>
+    <InformationalVersion>1.2.2</InformationalVersion>
     <Authors>P. Lewis</Authors>
     <Copyright>© P. Lewis 2026</Copyright>
     <Company>TSWSaveFileManager</Company>
@@ -22,11 +22,16 @@
     <DefineConstants></DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants></DefineConstants>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DefineConstants></DefineConstants>
+	</PropertyGroup>
 
-  <ItemGroup>
+	<ItemGroup>
+	  <None Remove="TSWSaveFileManager.vb_old" />
+	  <None Remove="TSWSFM.vb_old" />
+	</ItemGroup>
+
+	<ItemGroup>
     <Content Include="Assets\TSWSaveManager2.ico" />
   </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿' $Id: MoveDialog.Designer.vb 1493 2026-09-21 09:08:45Z Pete $
+﻿' $Id: MoveDialog.Designer.vb 1512 2026-10-25 08:25:27Z Pete $
 <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class MoveDialog
     Inherits System.Windows.Forms.Form
@@ -112,8 +112,10 @@ Partial Class MoveDialog
         ' 
         ' MoveDialog
         ' 
+        AcceptButton = ActionButton
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
+        CancelButton = CloseButton
         ClientSize = New Size(373, 162)
         Controls.Add(HeadingLabel)
         Controls.Add(Label1)

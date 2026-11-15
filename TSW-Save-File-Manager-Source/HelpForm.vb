@@ -1,4 +1,4 @@
-﻿' $Id: HelpForm.vb 1495 2026-09-21 21:46:17Z Pete $
+﻿' $Id: HelpForm.vb 1519 2026-11-15 11:37:46Z Pete $
 Imports System.Runtime.InteropServices
 
 Public Class HelpForm
@@ -73,10 +73,15 @@ Public Class HelpForm
     ' ===========================================================================================================
     ' Help form texts
     ' -----------------------------------------------------------------------------------------------------------
-    ' Small helper function for bold text
+    ' Small helper functions for bold and italic text
     ' -----------------------------------------------------------------------------------------------------------
     Private Function Rb(txt As String) As String
-        Return "\cf1\b " & txt & "\b0\cf0 "
+        Return "\cf1\b " & txt.Replace("&", "") & "\b0\cf0 "
+    End Function
+
+    ' -----------------------------------------------------------------------------------------------------------
+    Private Function Ri(txt As String) As String
+        Return "\i " & txt.Replace("&", "") & "\i0 "
     End Function
 
     ' -----------------------------------------------------------------------------------------------------------
@@ -91,6 +96,7 @@ Public Class HelpForm
         Dim st As String = "{\pard\li130\sa100\sb80\fs23\cf2\b\ul "        ' Subtitle
         Dim stc As String = "\ul0\b0\cf0\par}"                             ' Subtitle close
         Dim p As String = "{\pard\ql\li130\sa100\ri100\fs22 "              ' Paragraph
+        Dim pi As String = Trim(p) & "\li350 "                             ' Indented paragraph
         Dim pc As String = "\par}"                                         ' Paragraph close
         Dim i As String = "{\pard\li550\fi-200\ri100\sa50\fs22 -   "       ' Indent
         Dim il As String = "{\pard\li550\fi-200\ri100\sa100\fs22 -   "     ' Last indent
@@ -120,56 +126,64 @@ Public Class HelpForm
                            "with a tick." & pc &
                        p & "If the name of the save file is longer than the Saved As box, you can hover over the file name to see the full name. " &
                            "This also applies to the TSW save file name and the current folder." & pc &
-                       p & "All your files are stored in a Custom Saves folder in your TSW profile folder (usually \i My Documents\\My Games" &
-                           "\\TrainSimWorldx\i0 )." & pc &
-                       b & " File extensions are removed if they are included in the name." & pc
+                       p & "All your files are stored in a Custom Saves folder in your TSW profile folder (usually " &
+                           Ri("My Documents\\My Games\\TrainSimWorldx") & ")." & pc &
+                       p & "File extensions are removed if they are included in the name." & pc
 
                 rtf &= st & "Custom File List" & stc &
-                       p & "The default order of the list Is by file name. Click on a column heading to order by the values in that column. Click " &
+                       p & "The default order of the list is by file name. Click on a column heading to order by the values in that column. Click " &
                            "the same heading again to sort in reverse order. Your sort order will be remembered for the next time you start the app." & pc
 
                 rtf &= st & "Running TSW" & stc &
-                       p & "You can run TSW directly from this app by clicking the " & Rb("Run TSW") & " button. This will run the selected version " &
-                           "of the game. The app will remain open while you run TSW so you can save games on the fly. Use Alt-Tab to switch between " &
-                           "the game And the app." & pc &
-                       p & "When you save a game by overwriting an existing save, the app will automatically refresh the file details." & pc &
-                       p & "The app cannot run TSW for a specific profile. You will need to manually select the correct profile in TSW if required." & pc
+                p & "You can run TSW directly from this app by clicking the " & Rb(TSWSFM.RunButton.Text) & " button. This will run the " &
+                           "selected version of the game." & pc &
+                       p & "The app will remain open while you run TSW so you can save (and load) games on the fly. Use Alt-Tab to switch between " &
+                           "the game and the app. When you save a game by overwriting an existing save, the app will automatically refresh the file " &
+                           "details." & pc &
+                       b & "If you are using this app to run TSW following a fresh installation of the game, you may need to run the game and create " &
+                           "a save file to generate the required save game folder structure. If this is the case, TSW File Manager will close after " &
+                           "you click the button to run TSW. Restart the app once you have created a new save game." & pc &
+                       b & "The app cannot run TSW for a specific profile. You will need to manually select the correct profile in TSW if required." & pc
 
             ' ----------------------------------------
             ' Usage
             ' ----------------------------------------
             Case "Usage"
                 rtf = rtfHeader & mt & "Usage" & mtc &
-                      b & Rb("Save") & " current save file. Enter a meaningful file name into the New Save File Name box, then click Save. " &
-                          "The file will be saved to the current open folder - see the section on folders." & pc &
-                      b & Rb("Restore") & " save file. Select an existing save file from the custom file list then click Restore. You can " &
-                          "also restore a save file by double-clicking the file name in the list." & pc &
-                      b & Rb("Rename") & " save file. Select an existing save file from the list, enter a New name into the New Save File " &
-                          "Name box, then click Rename." & pc &
-                      b & Rb("Delete") & " file safely. Select a file in the custom file list then click Delete. The file will be moved to " &
-                          "the Recycle Bin." & pc &
-                      p & "\li350 You can also right-click on a custom file name And select Delete File from the pop-up menu." & pc &
-                      b & Rb("Move") & " files to other folders. Select a file in the custom file list then click Move to display the Move " &
-                          "File dialog. Select a folder from the drop-down list in the dialog And click Move. The file will be moved to your " &
-                          "chosen folder." & pc &
-                      p & "\li350 You can also right-click on a custom file name And select Move File from the pop-up menu." & pc &
-                      p & "\li350 The Move button allows you to move save files to another profile. Select the profile you want to move the file " &
-                          "to before clicking Move. The profile selection box will default to the current profile." & pc
+                      b & Rb("Save") & " current save file. Enter a meaningful file name into the New Save File Name box, then click " &
+                          Ri(TSWSFM.SaveButton.Text) & ". The file will be saved to the current open folder - see the section on folders." & pc &
+                      b & Rb("Restore") & " save file. Select an existing save file from the custom file list then click " &
+                          Ri(TSWSFM.RestoreButton.Text) & ". You can also restore a save file by double-clicking the file name in the list." & pc &
+                      b & Rb("Rename") & " save file. Select an existing save file from the list, Enter a new name into the New Save File " &
+                          "Name box, then click " & Ri(TSWSFM.RenameButton.Text) & "." & pc &
+                      b & Rb("Delete") & " file safely. Select a file in the custom file list then click " & Ri(TSWSFM.DeleteButton.Text) & ". " &
+                          "The file will be moved to the Recycle Bin." & pc &
+                     pi & "You can also right-click on a custom file name and select " & TSWSFM.DeleteFileMenuItem.Text.Replace("&", "") & " from " &
+                          "the pop-up menu." & pc &
+                      b & Rb("Move") & " files to other folders. Select a file in the custom file list then click " & Ri(TSWSFM.MoveButton.Text) &
+                          " to display Move File dialog. Select a folder from the drop-down list in the dialog and click " &
+                          Ri(MoveDialog.ActionButton.Text) & ". The file will be moved to your chosen folder." & pc &
+                     pi & "You can also right-click on a custom file name and select " & TSWSFM.MoveFileMenuItem.Text.Replace("&", "") & " from the " &
+                          "pop-up menu." & pc &
+                     pi & "The " & TSWSFM.MoveFileMenuItem.Text.Replace("&", "") & " button allows you to move save files to another profile. Select " &
+                          "the profile you want to move the file to before clicking " & Ri(MoveDialog.ActionButton.Text) & ". The profile selection " &
+                          "box will default to the current profile." & pc
 
             ' ----------------------------------------
             ' Profiles
             ' ----------------------------------------
             Case "Profiles"
                 rtf = rtfHeader & mt & "Profiles" & mtc &
-                      p & "Every user of TSW has at least one profile in which save games And progress etc. are stored. If you have more than one " &
+                      p & "Every user of TSW has at least one profile in which save games and progress etc. are stored. If you have more than one " &
                           "profile that contains a saved game file, you can select the profiles from the drop down-list. This allows you to save " &
                           "your games for each profile. Profiles are discovered automatically, but only when a save game exists for them." & pc &
                       b & "The naming of save files changed in TSW6. Previous versions gave them names that included the profile name in the file " &
                           "name, but TSW6 uses a hex string which makes identifying profiles difficult. To help with this, you can rename any " &
-                          "profile in any version of TSW using the " & Rb("Rename Profile") & " function from the Profiles menu. Enter a New " &
-                          "profile name then click Rename." & pc &
-                      p & "\li350 Note: This feature is for convenience only - the profile is not renamed in the game." & pc &
-                      b & "To revert the profile name to the default, clear the Profile Name box in the Rename Profile dialog and click Rename." & pc &
+                          "profile in any version of TSW using the " & Rb(TSWSFM.MnuRenameProfile.Text) & " function from the " &
+                          TSWSFM.MnuProfile.Text.Replace("&", "") & " menu. Enter a new profile name then click " & Ri("Rename") & "." & pc &
+                     pi & "Note: This feature is for convenience only - the profile is not renamed in the game." & pc &
+                      b & "To revert the profile name to the default, clear the Profile Name box in the Rename Profile dialog and click " &
+                          Ri("Rename") & "." & pc &
                       b & "When a new profile is created and a game is saved for the first time in the profile, you will need to close and re-open " &
                           "this app so that it can discover the new information." & pc
 
@@ -180,8 +194,8 @@ Public Class HelpForm
                 rtf = rtfHeader & mt & "Folders" & mtc &
                       p & "To help with the management of save files you can create folders to group your files. When you create a folder a tab " &
                           "is added above the custom file list." & pc &
-                      p & "There is a menu of controls for maintaining folders. Click on " & Rb("Folders") & " in the menu bar. You can also " &
-                          "right-click on the tabs to rename or delete them." & pc &
+                      p & "There is a menu of controls for maintaining folders. Click on " & Rb(TSWSFM.MnuAction.Text) & " in the menu bar. You " &
+                          "can also right-click on the tabs to rename or delete them." & pc &
                       p & "Save files can be saved directly to any folder, or moved between folders as required. Drag & Drop is enabled " &
                           "allowing you to drag file names from the custom file list to drop them on a folder tab. Alternatively, you can use the " &
                           "Move button - see Usage section." & pc &
@@ -191,24 +205,26 @@ Public Class HelpForm
                           "- it cannot be renamed or deleted." & pc
 
                 rtf &= st & "Folder Usage" & stc &
-                       b & Rb("New Folder") & " - To create a new folder, select the option from the menu, provide a name for the folder in " &
-                           "the dialog box then click Create." & pc &
-                       b & Rb("Rename Folder") & " - To rename a folder, make the folder active by clicking the tab then select \i Rename " &
-                           "Folder\i0  from the menu. Next, provide a new name for the folder in the dialog box then click Rename." & pc &
-                       b & Rb("Copy Folder") & " - This function will copy the current folder and all it's save files to a later version of " &
-                           "TSW, saving time when a new verion is released. Select \i Copy Folder\i0  from the menu, select a version and a " &
-                           "profile you want to copy the folder to, then click \i Copy\i0 ." & pc &
+                       b & Rb(TSWSFM.MnuNewTab.Text) & " - To create a new folder, select the option from the menu, provide a name for the folder in " &
+                           "the dialog box then click " & Ri("Create") & "." & pc &
+                       b & Rb(TSWSFM.MnuRenameTab.Text) & " - To rename a folder, make the folder active by clicking the tab then select " &
+                           Ri(TSWSFM.MnuRenameTab.Text) & " from the menu. Next, provide a new name for the folder in the dialog box then click " &
+                           Ri("Rename") & "." & pc &
+                       b & Rb(TSWSFM.MnuCopyTab.Text) & " - This function will copy the current folder and all it's save files to a later version of " &
+                           "TSW, saving time when a new version is released. Select " & Ri(TSWSFM.MnuCopyTab.Text) & " from the menu, select a " &
+                           "version and a profile you want to copy the folder to, then click " & Ri(CopyDialog.ActionButton.Text) & "." & pc &
                            i & "If the folder already exists in the new version, any copied files with the same name as an existing file " &
-                               "will be renamed with an incremental suffix. e.g. \i Save File -> Save file (1)\i0 ." & pc &
-                          il & "The function will only allow forward copying of folders to later versions." & pc &
-                       b & Rb("Delete Folder") & " - To delete a folder, click its tab then select \i Delete Folder\i0 . If the folder " &
-                           "contains any save files you will be asked if you want to move them to the Main folder." & pc &
-                           i & "If you choose \i Yes\i0  the files are moved and the folder is deleted, including any non-save files that may be " &
-                               "present in the folder." & pc &
-                          il & "If you choose \i No\i0  the folder and all of its files are moved to the recycle bin." & pc &
-                       b & Rb("Order Tabs") & " - Change the order of the tabs using this option." & pc &
-                           i & "\i Created Date\i0  sets the tab order by the order in which you created the tabs." & pc &
-                          il & "\i Folder Name\i0  orders by the names of the folders." & pc
+                               "will be renamed with an incremental suffix. e.g. " & Ri("Save File -> Save file (1)") & "." & pc &
+                           i & "The function will only allow forward copying of folders to later versions." & pc &
+                          il & "There is no guarantee that save files from older versions will work with newer ones." & pc &
+                       b & Rb(TSWSFM.MnuDeleteTab.Text) & " - To delete a folder, click its tab then select " & Ri(TSWSFM.MnuDeleteTab.Text) & ". " &
+                           "If the folder contains any save files you will be asked if you want to move them to the Main folder." & pc &
+                           i & "If you choose " & Ri("Yes") & " the files are moved and the folder is deleted, including any non-save files that " &
+                               "may be present in the folder." & pc &
+                          il & "If you choose " & Ri("No") & " the folder and all of its files are moved to the recycle bin." & pc &
+                       b & Rb(TSWSFM.MenuOrderTabs.Text) & " - Change the order of the folder tabs using this option." & pc &
+                           i & Ri(TSWSFM.MenuCreationDate.Text) & " sets the tab order by the order in which you created the folders." & pc &
+                          il & Ri(TSWSFM.MenuFileName.Text) & " orders by the names of the folders." & pc
                 ' ----------------------------------------
             Case Else
                 rtf = ""
